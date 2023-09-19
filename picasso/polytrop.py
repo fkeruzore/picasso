@@ -1,13 +1,15 @@
+from jax import jit, Array
 import jax.numpy as jnp
 
 
-def theta(phi, rho_0, P_0, Gamma):
+@jit
+def theta(phi: Array, rho_0: float, P_0: float, Gamma: float) -> Array:
     """
     Polytropic variable as defined in e.g. Ostriker+05
 
     Parameters
     ----------
-    phi : array-like
+    phi : array
         Normalized isolated gravitational potential (see Notes)
     rho_0 : float
         Central gas density
@@ -18,7 +20,7 @@ def theta(phi, rho_0, P_0, Gamma):
 
     Returns
     -------
-    array-like
+    array
         Polytropic variable for each phi
 
     Notes
@@ -32,14 +34,15 @@ def theta(phi, rho_0, P_0, Gamma):
     return t
 
 
-def P_g(phi, rho_0, P_0, Gamma):
+@jit
+def P_g(phi: Array, rho_0: float, P_0: float, Gamma: float) -> Array:
     """
     Polytropic gas pressure (total pressure, therm. + kin.)
     as defined in e.g. Ostriker+05
 
     Parameters
     ----------
-    phi : array-like
+    phi : array
         Normalized isolated gravitational potential (see Notes)
     rho_0 : float
         Central gas density
@@ -50,7 +53,7 @@ def P_g(phi, rho_0, P_0, Gamma):
 
     Returns
     -------
-    array-like
+    array
         Gas pressure (total pressure, therm. + kin.) for each phi
 
     Notes
@@ -63,13 +66,14 @@ def P_g(phi, rho_0, P_0, Gamma):
     return P_0 * (t ** (Gamma / (Gamma - 1.0)))
 
 
-def rho_g(phi, rho_0, P_0, Gamma):
+@jit
+def rho_g(phi: Array, rho_0: float, P_0: float, Gamma: float) -> Array:
     """
     Polytropic gas density as defined in e.g. Ostriker+05
 
     Parameters
     ----------
-    phi : array-like
+    phi : array
         Normalized isolated gravitational potential (see Notes)
     rho_0 : float
         Central gas density
@@ -80,7 +84,7 @@ def rho_g(phi, rho_0, P_0, Gamma):
 
     Returns
     -------
-    array-like
+    array
         Gas density for each phi
 
     Notes
@@ -93,14 +97,17 @@ def rho_g(phi, rho_0, P_0, Gamma):
     return rho_0 * (t ** (1.0 / (Gamma - 1.0)))
 
 
-def rho_P_g(phi, rho_0, P_0, Gamma):
+@jit
+def rho_P_g(
+    phi: Array, rho_0: float, P_0: float, Gamma: float
+) -> (Array, Array):
     """
     Polytropic gas density and pressure (total pressure, therm. + kin.)
     as defined in e.g. Ostriker+05
 
     Parameters
     ----------
-    phi : array-like
+    phi : array
         Normalized isolated gravitational potential (see Notes)
     rho_0 : float
         Central gas density
@@ -128,7 +135,10 @@ def rho_P_g(phi, rho_0, P_0, Gamma):
     return rho, P
 
 
-def f_nt_shaw10(r_R500, z, alpha_0=0.18, beta=0.5, n_nt=0.8):
+@jit
+def f_nt_shaw10(
+    r_R500: Array, z: float, alpha_0=0.18, beta=0.5, n_nt=0.8
+) -> Array:
     """
     Non-thermal pressure fraction computed from the Shaw+10 model
 
@@ -156,7 +166,10 @@ def f_nt_shaw10(r_R500, z, alpha_0=0.18, beta=0.5, n_nt=0.8):
     return alpha * (r_R500**n_nt)
 
 
-def f_nt_generic(r_R500, alpha, beta, gamma):
+@jit
+def f_nt_generic(
+    r_R500: Array, alpha: float, beta: float, gamma: float
+) -> Array:
     """
     Generic expression for non-thermal pressure fraction: a power law
     evolution with radius, plus a constant plateau (see Notes)

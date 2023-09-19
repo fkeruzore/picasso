@@ -1,8 +1,11 @@
-from jax import jit, numpy as jnp
+from jax import jit, Array
+import jax.numpy as jnp
 
 
 @jit
-def azimuthal_profile(q, r, r_bins):
+def azimuthal_profile(
+    q: Array, r: Array, r_bins: Array
+) -> (Array, Array, Array):
     """Azimuthal profile of `q`, evaluated at radii `r`, with radial
     binning `r_bins`.
 
