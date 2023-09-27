@@ -12,6 +12,7 @@ numpy = "^1.25.2"
 scipy = "^1.11.2"
 h5py = "^3.9.0"
 astropy = "^5.3.3"
+jaxlib = "0.4.10"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^7.4.2"
