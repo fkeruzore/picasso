@@ -167,9 +167,7 @@ def f_nt_shaw10(
 
 
 @jit
-def f_nt_generic(
-    r_R500: Array, alpha: float, beta: float, gamma: float
-) -> Array:
+def f_nt_generic(r_R500: Array, a: float, b: float, c: float) -> Array:
     """
     Generic expression for non-thermal pressure fraction: a power law
     evolution with radius, plus a constant plateau (see Notes)
@@ -179,12 +177,11 @@ def f_nt_generic(
     ----------
     r_R500 : array-like
         Radii normalized to R500c
-    alpha : float
-        Log10 of the non-thermal pressure fraction in the cluster
-        center
-    beta : float
-        Log10 of the non-thermal pressure fraction at r=2*R500c
-    gamma : float
+    a : float
+        Non-thermal pressure fraction in the cluster center
+    b : float
+        Non-thermal pressure fraction at r=2*R500c
+    c : float
         Power law radial dependence of f_nt
 
     Returns
@@ -196,9 +193,6 @@ def f_nt_generic(
     -----
     The model is computed as:
 
-    .. math:: f_{nt} = 10^\alpha + (10^\beta - 10^\alpha)
-              \left(\frac{r}{2R_{500c}}\right)^\gamma
+    .. math:: f_{nt} = a + (b-a) \left(\frac{r}{2R_{500c}}\right)^c
     """
-    return (10**alpha) + ((10**beta) - (10**alpha)) * (
-        (r_R500 / 2.0) ** gamma
-    )
+    return a + (b - a) * ((r_R500 / 2.0) ** c)
