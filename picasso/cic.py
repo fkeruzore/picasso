@@ -1,10 +1,9 @@
-from jax import jit, Array
+from jax import Array
 import jax.numpy as jnp
 import numpy as np
 from numpy.typing import NDArray
 
 
-@jit
 def cic_3d(
     positions: Array,
     center: Array,
