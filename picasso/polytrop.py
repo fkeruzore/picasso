@@ -1,20 +1,15 @@
-from jax import jit, Array
+from jax import Array
 import jax.numpy as jnp
 
 
-@jit
-def theta(phi: Array, rho_0: float, P_0: float, Gamma: float) -> Array:
+def theta(phi: Array, Gamma: float) -> Array:
     """
-    Polytropic variable as defined in e.g. Ostriker+05
+    Re-parametrized polytropic variable.
 
     Parameters
     ----------
     phi : array
         Normalized isolated gravitational potential (see Notes)
-    rho_0 : float
-        Central gas density
-    P_0 : float
-        Central gas pressure (total pressure, therm. + kin.)
     Gamma : float
         Gas polytropic index
 
@@ -22,30 +17,20 @@ def theta(phi: Array, rho_0: float, P_0: float, Gamma: float) -> Array:
     -------
     array
         Polytropic variable for each phi
-
-    Notes
-    -----
-    The potential `phi` is to be normalized to be zero at the bottom of
-        the well, and positive everywhere else. This definition males it
-        equivalent to (phi - phi_0) in the Ostriker model.
     """
-    t = 1.0 - ((Gamma - 1.0) / Gamma) * (rho_0 / P_0) * phi
+    t = 1.0 - ((Gamma - 1.0) / Gamma) * phi
     t = jnp.where(t >= 0.0, t, 0.0)
     return t
 
 
-@jit
-def P_g(phi: Array, rho_0: float, P_0: float, Gamma: float) -> Array:
+def P_g(phi: Array, P_0: float, Gamma: float) -> Array:
     """
-    Polytropic gas pressure (total pressure, therm. + kin.)
-    as defined in e.g. Ostriker+05
+    Polytropic gas pressure (total pressure, therm. + kin.).
 
     Parameters
     ----------
     phi : array
         Normalized isolated gravitational potential (see Notes)
-    rho_0 : float
-        Central gas density
     P_0 : float
         Central gas pressure (total pressure, therm. + kin.)
     Gamma : float
@@ -55,21 +40,14 @@ def P_g(phi: Array, rho_0: float, P_0: float, Gamma: float) -> Array:
     -------
     array
         Gas pressure (total pressure, therm. + kin.) for each phi
-
-    Notes
-    -----
-    The potential `phi` is to be normalized to be zero at the bottom of
-        the well, and positive everywhere else. This definition males it
-        equivalent to (phi - phi_0) in the Ostriker model.
     """
-    t = theta(phi, rho_0, P_0, Gamma)
+    t = theta(phi, Gamma)
     return P_0 * (t ** (Gamma / (Gamma - 1.0)))
 
 
-@jit
-def rho_g(phi: Array, rho_0: float, P_0: float, Gamma: float) -> Array:
+def rho_g(phi: Array, rho_0: float, Gamma: float) -> Array:
     """
-    Polytropic gas density as defined in e.g. Ostriker+05
+    Polytropic gas density.
 
     Parameters
     ----------
@@ -77,8 +55,6 @@ def rho_g(phi: Array, rho_0: float, P_0: float, Gamma: float) -> Array:
         Normalized isolated gravitational potential (see Notes)
     rho_0 : float
         Central gas density
-    P_0 : float
-        Central gas pressure (total pressure, therm. + kin.)
     Gamma : float
         Gas polytropic index
 
@@ -86,24 +62,16 @@ def rho_g(phi: Array, rho_0: float, P_0: float, Gamma: float) -> Array:
     -------
     array
         Gas density for each phi
-
-    Notes
-    -----
-    The potential `phi` is to be normalized to be zero at the bottom of
-        the well, and positive everywhere else. This definition males it
-        equivalent to (phi - phi_0) in the Ostriker model.
     """
-    t = theta(phi, rho_0, P_0, Gamma)
+    t = theta(phi, Gamma)
     return rho_0 * (t ** (1.0 / (Gamma - 1.0)))
 
 
-@jit
 def rho_P_g(
     phi: Array, rho_0: float, P_0: float, Gamma: float
 ) -> (Array, Array):
     """
-    Polytropic gas density and pressure (total pressure, therm. + kin.)
-    as defined in e.g. Ostriker+05
+    Polytropic gas density and pressure (total pressure, therm. + kin.).
 
     Parameters
     ----------
@@ -122,20 +90,13 @@ def rho_P_g(
         Gas density for each phi
     array-like
         Gas pressure (total pressure, therm. + kin.) for each phi
-
-    Notes
-    -----
-    The potential `phi` is to be normalized to be zero at the bottom of
-        the well, and positive everywhere else. This definition males it
-        equivalent to (phi - phi_0) in the Ostriker model.
     """
-    t = theta(phi, rho_0, P_0, Gamma)
+    t = theta(phi, Gamma)
     rho = rho_0 * (t ** (1.0 / (Gamma - 1.0)))
     P = P_0 * (t ** (Gamma / (Gamma - 1.0)))
     return rho, P
 
 
-@jit
 def f_nt_shaw10(
     r_R500: Array, z: float, alpha_0=0.18, beta=0.5, n_nt=0.8
 ) -> Array:
@@ -166,7 +127,6 @@ def f_nt_shaw10(
     return alpha * (r_R500**n_nt)
 
 
-@jit
 def f_nt_generic(r_R500: Array, a: float, b: float, c: float) -> Array:
     """
     Generic expression for non-thermal pressure fraction: a power law
