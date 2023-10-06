@@ -1,5 +1,5 @@
 <div align="center">
-<img src="https://raw.githubusercontent.com/fkeruzore/picasso/main/images/header_banner.png" alt="logo"></img>
+<img src="https://raw.githubusercontent.com/fkeruzore/fkeruzore.github.io/master/images/picasso_header.png" alt="logo"></img>
 </div>
 
 # picasso
