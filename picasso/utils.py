@@ -87,6 +87,13 @@ def optimize(
     Returns
     -------
     Array
+        Best-fit parameters
+    float
+        Best-fit loss value
+    int
+        Success status. If -1, did not converge; if 0, converged when
+        running BFGS; if 1, converged when running adam.
+    Array or None
         The gradient descent results in parameter and loss space,
         shape=(# of steps, # of parameters + 1).
         The last column is the loss function values.
