@@ -79,7 +79,7 @@ def test_optimize_linear_regression_noscatter_adam():
 
 def test_optimize_linear_regression_noscatter_bfgs_vs_adam():
     res_bfgs = _optimize_linear_regression(
-        try_bfgs=False, scatter=False, backup_optimizer=optax.adam(1e-3)
+        try_bfgs=True, scatter=False, backup_optimizer=optax.adam(1e-3)
     )
     par_bfgs, loss_bfgs, _, _, _, _ = res_bfgs
     res_adam = _optimize_linear_regression(
@@ -88,10 +88,10 @@ def test_optimize_linear_regression_noscatter_bfgs_vs_adam():
     par_adam, loss_adam, _, _, _, _ = res_adam
 
     assert jnp.allclose(
-        par_bfgs, par_adam
+        par_bfgs, par_adam, rtol=1e-2
     ), f"BFGS & adam find different parameters: {par_bfgs=} != {par_adam=}"
     assert jnp.allclose(
-        loss_bfgs, loss_adam
+        loss_bfgs, loss_adam, rtol=1e-2
     ), f"BFGS & adam find different loss minimum: {loss_bfgs=} != {loss_adam=}"
 
 
