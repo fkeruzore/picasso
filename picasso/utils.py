@@ -52,12 +52,12 @@ def azimuthal_profile(
 def optimize(
     loss_fn: Callable,
     start: Array,
-    optimizer: optax.GradientTransformation = optax.adam(learning_rate=1e-3),
     try_bfgs: bool = True,
     return_chain: bool = False,
     n_steps: int = 10_000,
-    loss_tol: float = 1e-8,
-    dloss_tol: float = 1e-8,
+    backup_optimizer: optax.GradientTransformation = optax.adam(1e-3),
+    backup_target_loss: float = 1e-8,
+    backup_max_dloss: float = 1e-8,
 ) -> tuple[Array, float, int, Union[Array, None]]:
     """Optimize a loss function and returns the gradient descent in
     parameter and loss space.
@@ -68,38 +68,51 @@ def optimize(
         The loss function
     start : Array
         Parameter space starting point for the gradient descent
-    optimizer : optax.GradientTransformation, optional
-        An `optax` minimizer, by default optax.adam(learning_rate=1e-3)
     try_bfgs : bool, optional
         If True, first tries minimizing the loss function using scipy
         optimize with methof `L-BFGS-B`, using jax's gradients, by
         default True
+    backup_optimizer : optax.GradientTransformation, optional
+        An `optax` minimizer to use as backup if BFGS doesn't converge
+        (or if `try_bfgs=False`), by default optax.adam(1e-3)
     return_chain : bool, optional
         If True, return the gradient descent evolution in parameter and
         loss space, by default False
     n_steps : int, optional
         Maximum number of gradient descent steps, by default 10_000,
-    loss_tol : float, optional
+    backup_target_loss : float, optional
         Maximum loss value for convergence, by default 1e-8
-    dloss_tol : float, optional
+    backup_max_delta_loss : float, optional
         Maximum relative loss change for convergence, by default 1e-8
 
     Returns
     -------
-    Array
+    best_par : Array
         Best-fit parameters
-    float
+    best_loss : float
         Best-fit loss value
-    int
-        Success status. If -1, did not converge; if 0, converged when
-        running BFGS; if 1, converged when running adam.
-    Array or None
+    status : int
+        Success status. If 0, did not converge; if 1, converged when
+        running BFGS; if 2, converged when running the backup optimizer
+    chain : Array or None
         The gradient descent results in parameter and loss space,
         shape=(# of steps, # of parameters + 1).
         The last column is the loss function values.
+
+    Notes
+    -----
+    * This function will always return a result, even if the target loss
+    is not reached - please be mindful of the values of `status` (which
+    will be 0 if neither BFGS nor the backup converged, 1 for BFGS convergence,
+    2 for backup convergence) and `best_loss`.
+    * n_steps will be used as a max number of steps for both BFGS and
+    the backup optimizer
+    * return_chain=True will significantly slow down the BFGS solver,
+    as it requires twice as many calls to the loss function; but not
+    the backup optimizer
     """
 
-    status = -1
+    status = 0
     if try_bfgs:
         if return_chain:
             chain = [[*start, loss_fn(start)]]
@@ -118,7 +131,6 @@ def optimize(
             method="L-BFGS-B",
             jac=jac,
             callback=callback,
-            tol=loss_tol,
         )
         best_par = res.x
         best_loss = float(res.fun)
@@ -126,36 +138,49 @@ def optimize(
         if return_chain:
             chain = jnp.array(chain)
         if res.success:
-            status = 0
+            status = 1
             return best_par, best_loss, status, chain
 
-    opt_state = optimizer.init(start)
+    opt_state = backup_optimizer.init(start)
     chain = []
 
     @jit
     def step(par, opt_state):
         loss_value, grads = value_and_grad(loss_fn)(par)
-        updates, opt_state = optimizer.update(grads, opt_state, par)
+        updates, opt_state = backup_optimizer.update(grads, opt_state, par)
         par = optax.apply_updates(par, updates)
         return par, opt_state, loss_value
 
-    par = start.copy()
-    old_loss_value = jnp.inf  # loss_fn(par)
-    chain.append([*par, old_loss_value])
+    # Subscript are step indices; at step i, (im1: i-1), (ip1: i+1)
 
-    for _ in range(n_steps):
-        par, opt_state, loss_value = step(par, opt_state)
-        chain.append([*par, loss_value])
-        if loss_value < loss_tol:
-            break
-        delta_loss = 1.0 - (loss_value / old_loss_value)
-        if delta_loss < dloss_tol:
-            break
-        old_loss_value = loss_value
+    # params & loss initialization, indices shifted by 1 for consistency
+    # with the iteration notation
+    par_ip1 = start.copy()  # that's really par_i
+    loss_i = jnp.inf  # that's really loss_im1
 
-    chain = jnp.array(chain)
-    best_par = chain[-1, :-1]
-    best_loss = chain[-1, -1]
-    if best_loss > loss_tol:
-        status = 1
-    return best_par, best_loss, status, (chain if return_chain else None)
+    for _ in range(n_steps):  # _ is i
+        par_i = par_ip1  # current params = next params of previous iteration
+        loss_im1 = loss_i  # previous loss = current loss of previous iteration
+        par_ip1, opt_state, loss_i = step(par_i, opt_state)  # step!
+        if return_chain:
+            chain.append([*par_i, loss_i])  # store
+
+        dloss = loss_im1 - loss_i
+        dloss_rel = dloss / loss_i
+
+        if loss_i < backup_target_loss:
+            status = 2
+            break
+        if jnp.abs(dloss_rel) < backup_max_dloss:
+            status = 2
+            break
+
+    best_par = par_i
+    best_loss = loss_i
+
+    return (
+        best_par,
+        best_loss,
+        status,
+        (jnp.array(chain) if return_chain else None),
+    )
