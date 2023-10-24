@@ -12,14 +12,34 @@ scipy = "^1.11.2"
 h5py = "^3.9.0"
 astropy = "^5.3.3"
 
+[tool.poetry.group.data_helpers]
+optional = true
+
+[tool.poetry.group.data_helpers.dependencies]
+pygio = {git = "https://git.cels.anl.gov/hacc/genericio.git"}
+
+[tool.poetry.group.jaxthings]
+optional = true
+
 [tool.poetry.group.jaxthings.dependencies]
 jax = "^0.4.11"
 jaxlib = "^0.4.10"
 optax = "^0.1.7"
 
-[tool.poetry.group.test.dependencies]
+[tool.poetry.group.tests]
+optional = true
+
+[tool.poetry.group.tests.dependencies]
 pytest = "^7.4.2"
 halotools = "^0.8.2"
+
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.2"
+flake8 = "^6.1.0"
+black = "^23.10.1"
 
 [build-system]
 requires = ["poetry-core"]
