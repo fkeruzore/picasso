@@ -14,7 +14,7 @@ def test_match_halo_catalogs():
     halos_go["M"] = halos_go["R"] ** 3
 
     halos_hy = {
-        "tag": halos_go["tag"],
+        "tag": halos_go["tag"] + 20,
         "R": halos_go["R"] * np.random.uniform(0.99, 1.01, n_go),
     }
     halos_hy["M"] = halos_hy["R"] ** 3
@@ -22,7 +22,7 @@ def test_match_halo_catalogs():
         k = f"center_{x}"
         halos_hy[k] = halos_go[k] + np.random.uniform(0.0, 0.1, n_go)
 
-    matches = match_halo_catalogs(
+    matches, tags_hy_match_in_go, tags_go_match_in_hy = match_halo_catalogs(
         halos_go,
         halos_hy,
         50.0,
@@ -36,8 +36,14 @@ def test_match_halo_catalogs():
 
     assert np.all(matches["tag_HY"] != -1), "Found unmatched halos"
     assert np.all(
-        matches["tag_GO"] == matches["tag_HY"]
+        matches["tag_GO"] == matches["tag_HY"] - 20
     ), "Not all halos got matched to the correct counterpart"
+    assert np.all(
+        tags_hy_match_in_go == halos_go["tag"] + 20
+    ), "Hydro match tags are not correctly attributed"
+    assert np.all(
+        tags_go_match_in_hy == halos_hy["tag"] - 20
+    ), "GO match tags are not correctly attributed"
 
 
 if __name__ == "__main__":
