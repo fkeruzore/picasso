@@ -2,6 +2,8 @@ import numpy as np
 import jax.numpy as jnp
 from jax import Array, jit
 import optax
+import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 from astropy.cosmology import Cosmology
 import h5py
 import pygio
@@ -10,7 +12,7 @@ from .. import utils, polytrop, nonthermal
 
 
 def _comov2prop_v(v, x, a, adot):
-    return a * v + adot * x
+    return a * v  # + adot * x
 
 
 class HACCDataset:
@@ -224,8 +226,9 @@ class HACCCutoutPair:
                 "status": s_pol,
                 "chain": chain_pol,
             },
-            "rho": best_rho,
-            "P": best_P,
+            "rho": best_rho * norms["rho"],
+            "P": best_P * norms["P"],
+            "which_P": which_P,
         }
 
         # Fit non-thermal pressure fraction
@@ -264,4 +267,86 @@ class HACCCutoutPair:
             "fnt": best_fnt,
         }
 
-        return results
+        for k in ["rho", "P"]:
+            data[k] *= norms[k]
+            data[f"d{k}"] *= norms[k]
+        return data, results
+
+    def plot_fit_results(self, data: dict, results: dict):
+        fig = plt.figure(figsize=(12, 6))
+        gs = GridSpec(2, 3, height_ratios=[2, 1])
+        axs_dat = [
+            fig.add_subplot(gs[0]),
+            fig.add_subplot(gs[1]),
+            fig.add_subplot(gs[2]),
+        ]
+        axs_res = [
+            fig.add_subplot(gs[3]),
+            fig.add_subplot(gs[4]),
+            fig.add_subplot(gs[5]),
+        ]
+        axs = axs_dat + axs_res
+        r_R500 = data["r_edges_R500"][:-1] + 0.5 * np.ediff1d(
+            data["r_edges_R500"]
+        )
+
+        for ax_dat, ax_res, k in zip(axs_dat, axs_res, ["rho", "P", "fnt"]):
+            ax_dat.errorbar(
+                r_R500,
+                data[k],
+                xerr=None,
+                yerr=data[f"d{k}"],
+                fmt="o--",
+                capsize=3,
+                mec="w",
+                zorder=1,
+            )
+            ax_dat.loglog(r_R500, results[k], lw=2, zorder=2)
+            ax_res.errorbar(
+                r_R500,
+                (data[k] / data[k]) - 1,
+                xerr=None,
+                yerr=data[f"d{k}"] / data[k],
+                fmt="o--",
+                capsize=3,
+                mec="w",
+                zorder=1,
+            )
+            ax_res.semilogx(r_R500, (results[k] / data[k]) - 1, lw=2, zorder=2)
+
+        for i, ax in enumerate(axs_dat):
+            ax.set_xticklabels([])
+            ax.set_ylabel(
+                [
+                    "$\\rho \\; [h^2 M_\\odot {\\rm Mpc^{-3}}]$",
+                    "$P \\; [h^2 M_\\odot {\\rm Mpc^{-3} km^2 s^{-2}}]$",
+                    "$f_{\\rm nt} = P_{\\rm nt} / P_{\\rm tot}$",
+                ][i]
+            )
+
+        for i, ax in enumerate(axs_res):
+            ax.set_xlabel("$r / R_{500c}$")
+            ax.set_yticks(np.arange(-0.8, 0.81, 0.2))
+            ax.set_ylim(-0.7, 0.7)
+            ax.set_ylabel(
+                [
+                    "$\\Delta \\rho / \\rho$",
+                    "$\\Delta P / P$",
+                    "$\\Delta f_{\\rm nt} / f_{\\rm nt}$",
+                ][i]
+            )
+
+        for ax in axs:
+            ax.xaxis.set_ticks_position("both")
+            ax.yaxis.set_ticks_position("both")
+            ax.grid()
+        fig.subplots_adjust(
+            left=0.075,
+            right=0.975,
+            bottom=0.1,
+            top=0.99,
+            hspace=0.05,
+            wspace=0.3,
+        )
+        fig.align_labels(axs)
+        return fig, axs
