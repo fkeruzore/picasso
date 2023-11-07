@@ -9,12 +9,6 @@ import os
 from .. import utils, polytrop, nonthermal
 
 
-def _read_hdf5(file_name):
-    with h5py.File(file_name, "r") as f:
-        grids = {k: np.array(v) for k, v in f.items()}
-    return grids
-
-
 def _comov2prop_v(v, x, a, adot):
     return a * v + adot * x
 
@@ -35,6 +29,7 @@ class HACCCutout(HACCDataset):
         is_hydro: bool = False,
     ):
         super().__init__(cosmo)
+        self.is_hydro = is_hydro
 
         # General cosmic stuff
         self.halo = halo
@@ -114,11 +109,14 @@ class HACCCutoutPair:
         parts_go: dict,
         parts_hy: dict,
         z: float,
+        box_size: float,
         cosmo: Cosmology,
     ):
-        self.cutout_hy = HACCCutout(halo_hy, parts_hy, z, cosmo, is_hydro=True)
+        self.cutout_hy = HACCCutout(
+            halo_hy, parts_hy, z, box_size, cosmo, is_hydro=True
+        )
         self.cutout_go = HACCCutout(
-            halo_go, parts_go, z, cosmo, is_hydro=False
+            halo_go, parts_go, z, box_size, cosmo, is_hydro=False
         )
 
     def get_profiles(
