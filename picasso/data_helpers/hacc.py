@@ -175,7 +175,7 @@ class HACCCutoutPair:
         r_edges_R500: Array,
         which_P: str = "tot",
         try_bfgs: bool = True,
-        backup_optimizer: optax.GradientTransformation = optax.adam,
+        backup_optimizer: optax.GradientTransformation = optax.adam(1e-3),
         return_chain: bool = False,
     ):
         norms = {"rho": 1e14, "P": 1e20}
