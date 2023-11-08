@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.typing import NDArray
 from astropy.table import Table
 
 
@@ -13,7 +14,7 @@ def match_halo_catalogs(
     key_tag: str = "fof_halo_tag",
     key_center_prefix: str = "fof_halo_center_",
     verbose: bool = True,
-) -> Table:
+) -> (Table, NDArray, NDArray):
     """Matches hydro counterparts to a gravity-only halo catalog using
     spatial separation and mass difference.
 
@@ -53,12 +54,21 @@ def match_halo_catalogs(
         gravity-only tags, `key_tag`_HY for hydro halo tags.
         Rows are halos in `halos_go`. If no match was found, the hydro
         tag is set to -1.
+    array
+        Tags of hydro halo matches for GO halos (shape=n_halos_go).
+        If no match was found, the tag is set to -1.
+    array
+        Tags of GO halo matches for hydro halos (shape=n_halos_hydro).
+        If no match was found, the tag is set to -1.
     """
     for k in [key_R, key_M, key_tag] + [
         f"{key_center_prefix}{x}" for x in "xyz"
     ]:
         assert k in halos_go.keys(), f"{k} is not a key in `halos_go`"
         assert k in halos_hy.keys(), f"{k} is not a key in `halos_hy`"
+
+    tags_hy_match_in_go = -1 * np.ones_like(halos_go[key_tag])
+    tags_go_match_in_hy = -1 * np.ones_like(halos_hy[key_tag])
 
     tags_matches = []
     n_halos = len(halos_go[key_tag])
@@ -87,13 +97,18 @@ def match_halo_catalogs(
         for j_hy in range(len(dsort)):
             M_j = cands_dsorted[key_M][j_hy]
             if np.abs(M_j - M_i) < (d_M_max * M_i):
-                tags_matches_i[f"{key_tag}_HY"] = cands_dsorted[key_tag][j_hy]
+                tag_hy = cands_dsorted[key_tag][j_hy]
+                tags_matches_i[f"{key_tag}_HY"] = tag_hy
                 break
+
         tags_matches.append(tags_matches_i)
+        tags_hy_match_in_go[i_go] = tag_hy
+        i_hy = np.where(halos_hy[key_tag] == tag_hy)[0][0]
+        tags_go_match_in_hy[i_hy] = tag
 
     tags_matches = Table(tags_matches)
     if verbose:
         n_nomatch = (tags_matches[f"{key_tag}_HY"] == -1).sum()
         f_nomatch = n_nomatch / n_halos
         print(f"-> {n_nomatch}/{n_halos} ({100*f_nomatch:.2f}%) unmatched")
-    return tags_matches
+    return tags_matches, tags_hy_match_in_go, tags_go_match_in_hy
