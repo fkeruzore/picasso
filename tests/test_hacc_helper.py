@@ -26,3 +26,16 @@ def test_hacc_coutout_pair():
         576.0,
         cosmo,
     )
+
+
+def test_fit_hacc_cutouts():
+    cutouts = hacc.HACCCutoutPair(
+        d["halo_go"],
+        d["halo_hy"],
+        d["parts_go"],
+        d["parts_hy"],
+        0.0,
+        576.0,
+        cosmo,
+    )
+    res = cutouts.fit_gas_profiles(jnp.logspace(-1, 0, 10))
