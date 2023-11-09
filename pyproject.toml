@@ -17,6 +17,7 @@ optional = true
 
 [tool.poetry.group.data_helpers.dependencies]
 pygio = {git = "https://git.cels.anl.gov/hacc/genericio.git"}
+matplotlib = "^3.8.1"
 
 [tool.poetry.group.jaxthings]
 optional = true
