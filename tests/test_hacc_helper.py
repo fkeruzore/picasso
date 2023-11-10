@@ -3,7 +3,7 @@ import jax.numpy as jnp
 import h5py
 import os
 from astropy.cosmology import FlatLambdaCDM
-from picasso.data_helpers import hacc
+from picasso.data_helpers import hacc, fitters
 
 cosmo = FlatLambdaCDM(67.66, 0.30964, Ob0=0.04897)
 
@@ -38,4 +38,4 @@ def test_fit_hacc_cutouts():
         576.0,
         cosmo,
     )
-    res = cutouts.fit_gas_profiles(jnp.logspace(-1, 0, 10))
+    res = fitters.fit_gas_profiles(cutouts, jnp.logspace(-1, 0, 10))

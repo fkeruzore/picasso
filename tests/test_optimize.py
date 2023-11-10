@@ -54,29 +54,6 @@ def _assert_converged(loss, loss_tol):
     ), f"Target loss not reached: {loss:.3e} > {loss_tol:.3e}"
 
 
-def test_optimize_linear_regression_noscatter_bfgs():
-    res = _optimize_linear_regression(
-        try_bfgs=True,
-        scatter=False,
-    )
-    best_par, best_loss, status, chain, truth, loss_tol = res
-
-    assert status == 1, f"{status=} != 1: BFGS did not converge"
-    _assert_accurate(best_par, truth)
-    _assert_converged(best_loss, loss_tol)
-
-
-def test_optimize_linear_regression_noscatter_adam():
-    res = _optimize_linear_regression(
-        try_bfgs=False, scatter=False, backup_optimizer=optax.adam(1e-3)
-    )
-    best_par, best_loss, status, chain, truth, loss_tol = res
-
-    assert status == 2, f"{status=} != 2: adam did not converge"
-    _assert_accurate(best_par, truth)
-    _assert_converged(best_loss, loss_tol)
-
-
 def test_optimize_linear_regression_noscatter_bfgs_vs_adam():
     res_bfgs = _optimize_linear_regression(
         try_bfgs=True, scatter=False, backup_optimizer=optax.adam(1e-3)
@@ -110,7 +87,5 @@ def test_optimize_linear_regression_scatter():
 
 
 if __name__ == "__main__":
-    test_optimize_linear_regression_noscatter_bfgs()
-    test_optimize_linear_regression_noscatter_adam()
     test_optimize_linear_regression_noscatter_bfgs_vs_adam()
     test_optimize_linear_regression_scatter()
