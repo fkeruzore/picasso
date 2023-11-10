@@ -32,14 +32,14 @@ def _optimize_linear_regression(
         pred = model_fn(x, *par)
         return jnp.nanmean((y - pred) ** 2)
 
-    best_par, best_loss, status, chain = optimize(
+    res = optimize(
         loss_fn,
         jnp.array([0.5, 1.5]),
         try_bfgs=try_bfgs,
         backup_optimizer=backup_optimizer,
         return_chain=return_chain,
     )
-    return best_par, best_loss, status, chain, truth, loss_tol
+    return res, truth, loss_tol
 
 
 def _assert_accurate(par, truth, rtol=1e-2):
@@ -54,38 +54,42 @@ def _assert_converged(loss, loss_tol):
     ), f"Target loss not reached: {loss:.3e} > {loss_tol:.3e}"
 
 
-def test_optimize_linear_regression_noscatter_bfgs_vs_adam():
-    res_bfgs = _optimize_linear_regression(
+def test_optimize_linear_regression_noscatter():
+    res_bfgs, truth, loss_tol = _optimize_linear_regression(
         try_bfgs=True, scatter=False, backup_optimizer=optax.adam(1e-3)
     )
-    par_bfgs, loss_bfgs, _, _, _, _ = res_bfgs
-    res_adam = _optimize_linear_regression(
+    res_adam, truth, loss_tol = _optimize_linear_regression(
         try_bfgs=False, scatter=False, backup_optimizer=optax.adam(1e-3)
     )
-    par_adam, loss_adam, _, _, _, _ = res_adam
+    bf_bfgs, bl_bfgs = res_bfgs.bf, res_bfgs.bl
+    bf_adam, bl_adam = res_adam.bf, res_adam.bl
+
+    _assert_accurate(bf_bfgs, truth)
+    _assert_accurate(bf_adam, truth)
+    _assert_converged(bl_bfgs, loss_tol)
+    _assert_converged(bl_adam, loss_tol)
 
     assert jnp.allclose(
-        par_bfgs, par_adam, rtol=1e-2
-    ), f"BFGS & adam find different parameters: {par_bfgs=} != {par_adam=}"
+        bf_bfgs, bf_adam, rtol=1e-2
+    ), f"BFGS & adam find different parameters: {bf_bfgs=} != {bf_adam=}"
     assert jnp.allclose(
-        loss_bfgs, loss_adam, rtol=1e-2
-    ), f"BFGS & adam find different loss minimum: {loss_bfgs=} != {loss_adam=}"
+        bl_bfgs, bl_adam, rtol=1e-2
+    ), f"BFGS & adam find different loss minimum: {bl_bfgs=} != {bl_adam=}"
 
 
 def test_optimize_linear_regression_scatter():
-    res = _optimize_linear_regression(
+    res, truth, loss_tol = _optimize_linear_regression(
         scatter=True,
         try_bfgs=True,
         backup_optimizer=optax.adam(learning_rate=1e-2),
         return_chain=True,
     )
-    best_par, best_loss, status, chain, truth, loss_tol = res
 
-    assert status != -1, "status=-1: unconverged optimization"
-    _assert_accurate(best_par, truth)
-    _assert_converged(best_loss, loss_tol)
+    assert res.status != -1, "status=-1: unconverged optimization"
+    _assert_accurate(res.bf, truth)
+    _assert_converged(res.bl, loss_tol)
 
 
 if __name__ == "__main__":
-    test_optimize_linear_regression_noscatter_bfgs_vs_adam()
+    test_optimize_linear_regression_noscatter()
     test_optimize_linear_regression_scatter()

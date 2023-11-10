@@ -3,7 +3,8 @@ import jax.numpy as jnp
 import optax
 from scipy.optimize import minimize
 from functools import partial
-from typing import Callable, Union
+from typing import Callable
+import matplotlib.pyplot as plt
 
 
 @partial(jit, static_argnames=["stats"])
@@ -49,6 +50,74 @@ def azimuthal_profile(
     return r_1d, jnp.array(mean), jnp.array(std)
 
 
+class FitResults:
+    """
+    Wrapper class for gradient descent fit results.
+
+    Attributes
+    ----------
+    bf : Array
+        Best-fitting parameters
+    bl : float
+        Best-fit loss value
+    status : int
+        Fit status (0 for no success, 1 for BFGS success, 2 for backup
+        optimizer success)
+    chain : Array or None
+        Gradient descent history, by default None
+    """
+
+    def __init__(self, bf: Array, bl: float, status: int, chain=None):
+        self.bf = bf
+        self.bl = bl
+        self.status = status
+        self.chain = chain
+
+    def print_status(self):
+        """
+        Print fit status and meaning.
+        """
+        meanings = [
+            "status=0: Gradient descent did not converge",
+            "status=1: Gradient descent converged using L-BFGS-B",
+            "status=2: Gradient descent converged using backup optimizer",
+        ]
+        print(meanings[self.status])
+
+    def __print__(self):
+        """
+        Print fit results and status.
+        """
+        self.print_status()
+        print(f"best fit parameters: {self.bf}")
+        print(f"best fit loss value: {self.bl}")
+
+    def plot_chain(self, param_names: list):
+        """
+        Plot gradient descent in parameter and loss space.
+
+        Parameters
+        ----------
+        param_names : list
+            Parameter names. Note that `loss` needs not be included.
+
+        Returns
+        -------
+        fig, axs
+        """
+        assert self.chain is not None, "Chain was not provided"
+        param_names = [*param_names, "loss"]
+        n = len(param_names)
+        fig, axs = plt.subplots(1, n)
+        for i in range(n):
+            axs[i].plot(self.chain[:, i])
+            axs[i].set_ylabel(param_names[i])
+            if i < (n - 1):
+                axs[i].set_xticklabels([])
+        axs[-1].set_xlabel("Step number")
+        return fig, axs
+
+
 def optimize(
     loss_fn: Callable,
     start: Array,
@@ -58,7 +127,7 @@ def optimize(
     backup_optimizer: optax.GradientTransformation = optax.adam(1e-3),
     backup_target_loss: float = 1e-8,
     backup_max_dloss: float = 1e-8,
-) -> tuple[Array, float, int, Union[Array, None]]:
+) -> FitResults:
     """Optimize a loss function and returns the gradient descent in
     parameter and loss space.
 
@@ -87,17 +156,7 @@ def optimize(
 
     Returns
     -------
-    best_par : Array
-        Best-fit parameters
-    best_loss : float
-        Best-fit loss value
-    status : int
-        Success status. If 0, did not converge; if 1, converged when
-        running BFGS; if 2, converged when running the backup optimizer
-    chain : Array or None
-        The gradient descent results in parameter and loss space,
-        shape=(# of steps, # of parameters + 1).
-        The last column is the loss function values.
+    FitResults
 
     Notes
     -----
@@ -139,7 +198,13 @@ def optimize(
             chain = jnp.array(chain)
         if res.success:
             status = 1
-            return best_par, best_loss, status, chain
+            results = FitResults(
+                best_par,
+                best_loss,
+                status,
+                chain=(jnp.array(chain) if return_chain else None),
+            )
+            return results
 
     opt_state = backup_optimizer.init(start)
     chain = []
@@ -178,9 +243,10 @@ def optimize(
     best_par = par_i
     best_loss = loss_i
 
-    return (
+    results = FitResults(
         best_par,
         best_loss,
         status,
-        (jnp.array(chain) if return_chain else None),
+        chain=(jnp.array(chain) if return_chain else None),
     )
+    return results

@@ -4,6 +4,7 @@ from jax import Array, jit
 import optax
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
+from typing import Union
 from .hacc import HACCCutoutPair
 from .. import utils, polytrop, nonthermal
 
@@ -16,7 +17,7 @@ def fit_gas_profiles(
     try_bfgs: bool = True,
     backup_optimizer: optax.GradientTransformation = optax.adam(1e-3),
     return_chain: bool = False,
-) -> dict:
+) -> (dict, utils.FitResults, Union[utils.FitResults, None]):
     """
     Fit the polytropic gas model on a pair of halo matches, i.e. finds
     the best set of model parameters to infer the gas properties of a
@@ -49,7 +50,11 @@ def fit_gas_profiles(
     Returns
     -------
     dict
-        Fit results.
+        Data
+    picasso.utils.FitResults
+        Polytropic fit results
+    picasso.utils.FitResults or None
+        Non-thermal fraction fit results
     """
     norms = {"rho": 1e14, "P": 1e20}
     data = cutout_pair.get_profiles(r_edges_R500, which_P=which_P, norms=norms)
@@ -83,7 +88,7 @@ def fit_gas_profiles(
         [jnp.log10(rho_0), jnp.log10(P_0), 1.2, jnp.log10(rho_0 / P_0 / 3)]
     )
 
-    bf_pol, bl_pol, s_pol, chain_pol = utils.optimize(
+    res_pol = utils.optimize(
         loss_fn_pol,
         par_i,
         backup_optimizer=backup_optimizer,
@@ -91,21 +96,12 @@ def fit_gas_profiles(
         return_chain=return_chain,
     )
 
-    best_rho, best_P = compute_model_pol(bf_pol)
-    results = {
-        "pol_fit_output": {
-            "bf": bf_pol,
-            "loss": bl_pol,
-            "status": s_pol,
-            "chain": chain_pol,
-        },
-        "rho": best_rho * norms["rho"],
-        "P": best_P * norms["P"],
-        "which_P": which_P,
-    }
+    for k in ["rho", "P"]:
+        data[k] *= norms[k]
+        data[f"d{k}"] *= norms[k]
 
     if not fit_fnt:
-        return results
+        return data, res_pol
 
     # Fit non-thermal pressure fraction
     def compute_model_fnt(par):
@@ -123,7 +119,7 @@ def fit_gas_profiles(
 
     par_i = jnp.array([-1.0, -0.5, 0.75])
 
-    bf_fnt, bl_fnt, s_fnt, chain_fnt = utils.optimize(
+    res_fnt = utils.optimize(
         loss_fn_fnt,
         par_i,
         backup_optimizer=backup_optimizer,
@@ -131,22 +127,7 @@ def fit_gas_profiles(
         return_chain=return_chain,
     )
 
-    best_fnt = compute_model_fnt(bf_fnt)
-    results = {
-        **results,
-        "fnt_fit_output": {
-            "bf": bf_fnt,
-            "loss": bl_fnt,
-            "status": s_fnt,
-            "chain": chain_fnt,
-        },
-        "fnt": best_fnt,
-    }
-
-    for k in ["rho", "P"]:
-        data[k] *= norms[k]
-        data[f"d{k}"] *= norms[k]
-    return data, results
+    return data, res_pol, res_fnt
 
 
 def plot_fit_results(cutout_pair: HACCCutoutPair, data: dict, results: dict):
