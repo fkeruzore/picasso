@@ -7,7 +7,7 @@ from picasso.utils import optimize
 def _optimize_linear_regression(
     scatter=False,
     try_bfgs=True,
-    return_chain=True,
+    return_history=True,
     backup_optimizer=optax.adam(learning_rate=1e-2),
 ):
     np.random.seed(42)
@@ -37,7 +37,7 @@ def _optimize_linear_regression(
         jnp.array([0.5, 1.5]),
         try_bfgs=try_bfgs,
         backup_optimizer=backup_optimizer,
-        return_chain=return_chain,
+        return_history=return_history,
     )
     return res, truth, loss_tol
 
@@ -82,7 +82,7 @@ def test_optimize_linear_regression_scatter():
         scatter=True,
         try_bfgs=True,
         backup_optimizer=optax.adam(learning_rate=1e-2),
-        return_chain=True,
+        return_history=False,
     )
 
     assert res.status != -1, "status=-1: unconverged optimization"
