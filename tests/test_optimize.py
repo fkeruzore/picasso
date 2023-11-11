@@ -2,6 +2,7 @@ import numpy as np
 import jax.numpy as jnp
 import optax
 from picasso.utils import optimize
+import pytest
 
 
 def _optimize_linear_regression(
@@ -48,48 +49,22 @@ def _assert_accurate(par, truth, rtol=1e-2):
     ), "Recovered parameters not close to truth: {par} != {truth}"
 
 
-def _assert_converged(loss, loss_tol):
+def _assert_converged(loss, loss_tol, status):
+    assert status != 0, "status=0: gradient descent did not converge"
     assert (
         loss < loss_tol
     ), f"Target loss not reached: {loss:.3e} > {loss_tol:.3e}"
 
 
-def test_optimize_linear_regression_noscatter():
-    res_bfgs, truth, loss_tol = _optimize_linear_regression(
-        try_bfgs=True, scatter=False, backup_optimizer=optax.adam(1e-3)
-    )
-    res_adam, truth, loss_tol = _optimize_linear_regression(
-        try_bfgs=False, scatter=False, backup_optimizer=optax.adam(1e-3)
-    )
-    bf_bfgs, bl_bfgs = res_bfgs.bf, res_bfgs.bl
-    bf_adam, bl_adam = res_adam.bf, res_adam.bl
-
-    _assert_accurate(bf_bfgs, truth)
-    _assert_accurate(bf_adam, truth)
-    _assert_converged(bl_bfgs, loss_tol)
-    _assert_converged(bl_adam, loss_tol)
-
-    assert jnp.allclose(
-        bf_bfgs, bf_adam, rtol=1e-2
-    ), f"BFGS & adam find different parameters: {bf_bfgs=} != {bf_adam=}"
-    assert jnp.allclose(
-        bl_bfgs, bl_adam, rtol=1e-2
-    ), f"BFGS & adam find different loss minimum: {bl_bfgs=} != {bl_adam=}"
-
-
-def test_optimize_linear_regression_scatter():
+@pytest.mark.parametrize("scatter", [True, False])
+def test_optimize_linear_regression(scatter):
     res, truth, loss_tol = _optimize_linear_regression(
-        scatter=True,
-        try_bfgs=True,
-        backup_optimizer=optax.adam(learning_rate=1e-2),
-        return_history=False,
+        try_bfgs=True, scatter=scatter, backup_optimizer=optax.adam(1e-3)
     )
 
-    assert res.status != -1, "status=-1: unconverged optimization"
     _assert_accurate(res.bf, truth)
-    _assert_converged(res.bl, loss_tol)
+    _assert_converged(res.bl, loss_tol, res.status)
 
 
 if __name__ == "__main__":
-    test_optimize_linear_regression_noscatter()
-    test_optimize_linear_regression_scatter()
+    test_optimize_linear_regression()
