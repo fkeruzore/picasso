@@ -3,7 +3,8 @@ import jax.numpy as jnp
 import optax
 from scipy.optimize import minimize
 from functools import partial
-from typing import Callable, Union
+from typing import Callable, Union, Iterable, Tuple
+import matplotlib.pyplot as plt
 
 
 @partial(jit, static_argnames=["stats"])
@@ -49,16 +50,85 @@ def azimuthal_profile(
     return r_1d, jnp.array(mean), jnp.array(std)
 
 
+class FitResults:
+    """
+    Wrapper class for gradient descent fit results.
+
+    Attributes
+    ----------
+    bf : Array
+        Best-fitting parameters
+    bl : float
+        Best-fit loss value
+    status : int
+        Fit status (0 for no success, 1 for BFGS success, 2 for backup
+        optimizer success)
+    history : Array or None
+        Gradient descent history, by default None
+    """
+
+    def __init__(self, bf: Array, bl: float, status: int, history=None):
+        self.bf = bf
+        self.bl = bl
+        self.status = status
+        self.history = history
+
+    def print_status(self):
+        """
+        Print fit status and meaning.
+        """
+        meanings = [
+            "status=0: Gradient descent did not converge",
+            "status=1: Gradient descent converged using L-BFGS-B",
+            "status=2: Gradient descent converged using backup optimizer",
+        ]
+        print(meanings[self.status])
+
+    def __print__(self):
+        """
+        Print fit results and status.
+        """
+        self.print_status()
+        print(f"best fit parameters: {self.bf}")
+        print(f"best fit loss value: {self.bl}")
+
+    def plot_history(self, param_names: list):
+        """
+        Plot gradient descent in parameter and loss space.
+
+        Parameters
+        ----------
+        param_names : list
+            Parameter names. Note that `loss` needs not be included.
+
+        Returns
+        -------
+        fig, axs
+        """
+        assert self.history is not None, "Chain was not provided"
+        param_names = [*param_names, "loss"]
+        n = len(param_names)
+        fig, axs = plt.subplots(1, n)
+        for i in range(n):
+            axs[i].plot(self.history[:, i])
+            axs[i].set_ylabel(param_names[i])
+            if i < (n - 1):
+                axs[i].set_xticklabels([])
+        axs[-1].set_xlabel("Step number")
+        return fig, axs
+
+
 def optimize(
     loss_fn: Callable,
     start: Array,
+    bounds: Union[None, Iterable[Tuple[float, float]]],
     try_bfgs: bool = True,
-    return_chain: bool = False,
+    return_history: bool = False,
     n_steps: int = 10_000,
     backup_optimizer: optax.GradientTransformation = optax.adam(1e-3),
     backup_target_loss: float = 1e-8,
     backup_max_dloss: float = 1e-8,
-) -> tuple[Array, float, int, Union[Array, None]]:
+) -> FitResults:
     """Optimize a loss function and returns the gradient descent in
     parameter and loss space.
 
@@ -68,6 +138,9 @@ def optimize(
         The loss function
     start : Array
         Parameter space starting point for the gradient descent
+    bounds : sequence of 2-tuples, optional
+        Bounds (min, max) for each parameter (only works for scipy's
+        `L-BFGS-B` minimizer), by default None
     try_bfgs : bool, optional
         If True, first tries minimizing the loss function using scipy
         optimize with methof `L-BFGS-B`, using jax's gradients, by
@@ -75,7 +148,7 @@ def optimize(
     backup_optimizer : optax.GradientTransformation, optional
         An `optax` minimizer to use as backup if BFGS doesn't converge
         (or if `try_bfgs=False`), by default optax.adam(1e-3)
-    return_chain : bool, optional
+    return_history : bool, optional
         If True, return the gradient descent evolution in parameter and
         loss space, by default False
     n_steps : int, optional
@@ -87,17 +160,7 @@ def optimize(
 
     Returns
     -------
-    best_par : Array
-        Best-fit parameters
-    best_loss : float
-        Best-fit loss value
-    status : int
-        Success status. If 0, did not converge; if 1, converged when
-        running BFGS; if 2, converged when running the backup optimizer
-    chain : Array or None
-        The gradient descent results in parameter and loss space,
-        shape=(# of steps, # of parameters + 1).
-        The last column is the loss function values.
+    FitResults
 
     Notes
     -----
@@ -107,21 +170,21 @@ def optimize(
     2 for backup convergence) and `best_loss`.
     * n_steps will be used as a max number of steps for both BFGS and
     the backup optimizer
-    * return_chain=True will significantly slow down the BFGS solver,
+    * return_history=True will significantly slow down the BFGS solver,
     as it requires twice as many calls to the loss function; but not
     the backup optimizer
     """
 
     status = 0
     if try_bfgs:
-        if return_chain:
-            chain = [[*start, loss_fn(start)]]
+        if return_history:
+            history = [[*start, loss_fn(start)]]
 
             def callback(par):  # Function to save params & loss for each step
-                chain.append([*par, loss_fn(par)])
+                history.append([*par, loss_fn(par)])
 
         else:
-            chain = None
+            history = None
             callback = None
 
         jac = grad(loss_fn)
@@ -131,18 +194,25 @@ def optimize(
             method="L-BFGS-B",
             jac=jac,
             callback=callback,
+            bounds=bounds,
         )
         best_par = res.x
         best_loss = float(res.fun)
 
-        if return_chain:
-            chain = jnp.array(chain)
+        if return_history:
+            history = jnp.array(history)
         if res.success:
             status = 1
-            return best_par, best_loss, status, chain
+            results = FitResults(
+                best_par,
+                best_loss,
+                status,
+                history=(jnp.array(history) if return_history else None),
+            )
+            return results
 
     opt_state = backup_optimizer.init(start)
-    chain = []
+    history = []
 
     @jit
     def step(par, opt_state):
@@ -162,8 +232,8 @@ def optimize(
         par_i = par_ip1  # current params = next params of previous iteration
         loss_im1 = loss_i  # previous loss = current loss of previous iteration
         par_ip1, opt_state, loss_i = step(par_i, opt_state)  # step!
-        if return_chain:
-            chain.append([*par_i, loss_i])  # store
+        if return_history:
+            history.append([*par_i, loss_i])  # store
 
         dloss = loss_im1 - loss_i
         dloss_rel = dloss / loss_i
@@ -178,9 +248,10 @@ def optimize(
     best_par = par_i
     best_loss = loss_i
 
-    return (
+    results = FitResults(
         best_par,
         best_loss,
         status,
-        (jnp.array(chain) if return_chain else None),
+        history=(jnp.array(history) if return_history else None),
     )
+    return results
