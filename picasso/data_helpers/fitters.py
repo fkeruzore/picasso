@@ -91,6 +91,7 @@ def fit_gas_profiles(
     res_pol = utils.optimize(
         loss_fn_pol,
         par_i,
+        bounds=[(None, None), (None, None), (1.0, 2.0), (None, None)],
         backup_optimizer=backup_optimizer,
         backup_target_loss=1e-2,
         return_history=return_history,
@@ -122,6 +123,7 @@ def fit_gas_profiles(
     res_fnt = utils.optimize(
         loss_fn_fnt,
         par_i,
+        bounds=[(None, 0.0), (None, 0.0), (0.0, None)],
         backup_optimizer=backup_optimizer,
         backup_target_loss=1e-2,
         return_history=return_history,
