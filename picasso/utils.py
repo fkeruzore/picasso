@@ -121,7 +121,7 @@ class FitResults:
 def optimize(
     loss_fn: Callable,
     start: Array,
-    bounds: Union[None, Iterable[Tuple[float, float]]],
+    bounds: Union[None, Iterable[Tuple[float, float]]] = None,
     try_bfgs: bool = True,
     return_history: bool = False,
     n_steps: int = 10_000,
