@@ -8,6 +8,7 @@ import pytest
 def _optimize_linear_regression(
     scatter=False,
     try_bfgs=True,
+    bounds=None,
     return_history=True,
     backup_optimizer=optax.adam(learning_rate=1e-2),
 ):
@@ -36,6 +37,7 @@ def _optimize_linear_regression(
     res = optimize(
         loss_fn,
         jnp.array([0.5, 1.5]),
+        bounds=bounds,
         try_bfgs=try_bfgs,
         backup_optimizer=backup_optimizer,
         return_history=return_history,
@@ -56,15 +58,33 @@ def _assert_converged(loss, loss_tol, status):
     ), f"Target loss not reached: {loss:.3e} > {loss_tol:.3e}"
 
 
-@pytest.mark.parametrize("scatter", [True, False])
-def test_optimize_linear_regression(scatter):
+def _assert_in_bounds(par, bounds):
+    for i, (p, b) in enumerate(zip(par, bounds)):
+        b_low = b[0] if b[0] is not None else -np.inf
+        b_upp = b[1] if b[1] is not None else +np.inf
+        assert (p >= b_low) and (
+            p <= b_upp
+        ), f"param {i} ({p}) is not within bounds ({b_low}, {b_upp})"
+
+
+@pytest.mark.parametrize(
+    ["scatter", "bounds"],
+    [
+        (False, None),
+        (False, [(0.0, 2.0), (0.0, 2.0)]),
+        (False, [(0.0, None), (0.0, None)]),
+        (True, None),
+    ],
+)
+def test_optimize_linear_regression(scatter, bounds):
     res, truth, loss_tol = _optimize_linear_regression(
-        try_bfgs=True, scatter=scatter, backup_optimizer=optax.adam(1e-3)
+        try_bfgs=True,
+        scatter=scatter,
+        bounds=bounds,
+        backup_optimizer=optax.adam(1e-3),
     )
 
     _assert_accurate(res.bf, truth)
     _assert_converged(res.bl, loss_tol, res.status)
-
-
-if __name__ == "__main__":
-    test_optimize_linear_regression()
+    if bounds is not None:
+        _assert_in_bounds(res.bf, bounds)

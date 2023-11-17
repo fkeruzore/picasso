@@ -3,7 +3,7 @@ import jax.numpy as jnp
 import optax
 from scipy.optimize import minimize
 from functools import partial
-from typing import Callable
+from typing import Callable, Union, Iterable, Tuple
 import matplotlib.pyplot as plt
 
 
@@ -121,6 +121,7 @@ class FitResults:
 def optimize(
     loss_fn: Callable,
     start: Array,
+    bounds: Union[None, Iterable[Tuple[float, float]]],
     try_bfgs: bool = True,
     return_history: bool = False,
     n_steps: int = 10_000,
@@ -137,6 +138,9 @@ def optimize(
         The loss function
     start : Array
         Parameter space starting point for the gradient descent
+    bounds : sequence of 2-tuples, optional
+        Bounds (min, max) for each parameter (only works for scipy's
+        `L-BFGS-B` minimizer), by default None
     try_bfgs : bool, optional
         If True, first tries minimizing the loss function using scipy
         optimize with methof `L-BFGS-B`, using jax's gradients, by
@@ -190,6 +194,7 @@ def optimize(
             method="L-BFGS-B",
             jac=jac,
             callback=callback,
+            bounds=bounds,
         )
         best_par = res.x
         best_loss = float(res.fun)
