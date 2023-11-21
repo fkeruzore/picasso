@@ -48,19 +48,21 @@ class HACCCutout(HACCDataset):
         )  # comoving distance from center, h-1 cMpc
 
         # Particle velocities
-        xyz_h = {x: halo[f"fof_halo_center_{x}"] for x in "xyz"}
-        vxyz_h = {x: halo[f"fof_halo_com_{x}"] for x in "xyz"}
-        vxyz_h_p = {
-            x: _comov2prop_v(vxyz_h[x], xyz_h[x], a, adot) for x in "xyz"
-        }  # Proper halo velocity, km2 s-2
-        vxyz_p_p = {
-            x: _comov2prop_v(parts["vx"], parts["x"], a, adot) for x in "xyz"
-        }  # Proper particle velocities, km2 s-2
-        parts["v2_proper"] = (
-            (vxyz_p_p["x"] - vxyz_h_p["x"]) ** 2
-            + (vxyz_p_p["y"] - vxyz_h_p["y"]) ** 2
-            + (vxyz_p_p["z"] - vxyz_h_p["z"]) ** 2
-        )  # Squared proper particle velocities in halo frame, km2 s-2
+        if all([f"v{_}" in parts for _ in "xyz"]):
+            xyz_h = {x: halo[f"fof_halo_center_{x}"] for x in "xyz"}
+            vxyz_h = {x: halo[f"fof_halo_com_{x}"] for x in "xyz"}
+            vxyz_h_p = {
+                x: _comov2prop_v(vxyz_h[x], xyz_h[x], a, adot) for x in "xyz"
+            }  # Proper halo velocity, km2 s-2
+            vxyz_p_p = {
+                x: _comov2prop_v(parts["vx"], parts["x"], a, adot)
+                for x in "xyz"
+            }  # Proper particle velocities, km2 s-2
+            parts["v2_proper"] = (
+                (vxyz_p_p["x"] - vxyz_h_p["x"]) ** 2
+                + (vxyz_p_p["y"] - vxyz_h_p["y"]) ** 2
+                + (vxyz_p_p["z"] - vxyz_h_p["z"]) ** 2
+            )  # Squared proper particle velocities in halo frame, km2 s-2
 
         # Normalized potential
         parts["phi"] -= parts["phi"].min()
