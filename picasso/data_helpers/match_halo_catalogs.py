@@ -103,8 +103,8 @@ def match_halo_catalogs(
                 success = True
                 break
 
+        tags_matches.append(tags_matches_i)
         if success:
-            tags_matches.append(tags_matches_i)
             tags_hy_match_in_go[i_go] = tag_hy
             i_hy = np.where(halos_hy[key_tag] == tag_hy)[0][0]
             tags_go_match_in_hy[i_hy] = tag

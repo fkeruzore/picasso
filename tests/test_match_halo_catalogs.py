@@ -67,7 +67,7 @@ def test_match_halo_catalogs(test_unmatched):
             key_tag="tag",
             key_center_prefix="center_",
         )
-        assert np.all(matches_b == matches)
+        assert np.all(matches_b[:-1] == matches)
         assert np.all(tags_go_in_hy_b == tags_go_in_hy)
         assert np.all(tags_hy_in_go_b[:-1] == tags_hy_in_go)
         assert np.all(tags_hy_in_go_b[-1] == -1), (
