@@ -65,7 +65,8 @@ class HACCCutout(HACCDataset):
             )  # Squared proper particle velocities in halo frame, km2 s-2
 
         # Normalized potential
-        parts["phi"] -= parts["phi"].min()
+        if "phi" in parts.keys():
+            parts["phi"] -= parts["phi"].min()
 
         # Is it a hydro sim? If yes, compute gas properties
         if is_hydro:
