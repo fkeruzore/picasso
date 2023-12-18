@@ -63,34 +63,37 @@ class FitResults:
     status : int
         Fit status (0 for no success, 1 for BFGS success, 2 for backup
         optimizer success)
+    bf_model : Array or None
+        Best-fitting model, by default None
     history : Array or None
         Gradient descent history, by default None
     """
 
-    def __init__(self, bf: Array, bl: float, status: int, history=None):
+    def __init__(
+        self, bf: Array, bl: float, status: int, bf_model=None, history=None
+    ):
         self.bf = bf
         self.bl = bl
         self.status = status
+        self.bf_model = bf_model
         self.history = history
 
-    def print_status(self):
-        """
-        Print fit status and meaning.
-        """
+    def decode_status(self):
         meanings = [
             "status=0: Gradient descent did not converge",
             "status=1: Gradient descent converged using L-BFGS-B",
             "status=2: Gradient descent converged using backup optimizer",
         ]
-        print(meanings[self.status])
+        return meanings[self.status]
 
-    def __print__(self):
-        """
-        Print fit results and status.
-        """
-        self.print_status()
-        print(f"best fit parameters: {self.bf}")
-        print(f"best fit loss value: {self.bl}")
+    def __repr__(self):
+        res = f"{self.decode_status()}\n"
+        res += f"best fit parameters: {self.bf}\n"
+        res += f"best fit loss value: {self.bl}"
+        return res
+
+    def __str__(self):
+        return self.__repr__()
 
     def plot_history(self, param_names: list):
         """
@@ -108,7 +111,7 @@ class FitResults:
         assert self.history is not None, "Chain was not provided"
         param_names = [*param_names, "loss"]
         n = len(param_names)
-        fig, axs = plt.subplots(1, n)
+        fig, axs = plt.subplots(n, 1)
         for i in range(n):
             axs[i].plot(self.history[:, i])
             axs[i].set_ylabel(param_names[i])
