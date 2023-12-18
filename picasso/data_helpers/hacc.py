@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.typing import NDArray
 from astropy.cosmology import Cosmology
+from typing import Union
 from .. import utils
 
 
@@ -99,69 +100,139 @@ class HACCCutout(HACCDataset):
         self.parts = parts
 
 
-class HACCCutoutPair:
+class HACCSODProfiles(HACCDataset):
     def __init__(
         self,
-        halo_go: dict,
-        halo_hy: dict,
-        parts_go: dict,
-        parts_hy: dict,
+        r_edges: NDArray,
+        rho_tot: NDArray,
+        halo: dict,
         z: float,
-        box_size: float,
         cosmo: Cosmology,
+        rho_g: Union[NDArray, None] = None,
+        P_th: Union[NDArray, None] = None,
+        P_nt: Union[NDArray, None] = None,
+        is_hydro: bool = False,
     ):
-        self.cutout_hy = HACCCutout(
-            halo_hy, parts_hy, z, box_size, cosmo, is_hydro=True
+        super().__init__(cosmo)
+        self.is_hydro = is_hydro
+        self.halo = halo
+        self.z = z
+
+        self.r_edges = r_edges
+        self.rho_tot = rho_tot
+        self.rho_g = rho_g
+        self.P_th = P_th
+        self.P_nt = P_nt
+        if (P_nt is not None) and (P_th is not None):
+            self.P_tot = P_nt + P_th
+            self.f_nt = P_nt / self.P_tot
+        else:
+            self.P_tot, self.f_nt = None, None
+
+    @classmethod
+    def from_sodpropertybins(
+        cls,
+        halo: dict,
+        profs: dict,
+        z: float,
+        cosmo: Cosmology,
+        is_hydro: bool = False,
+    ):
+        keys = [
+            "fof_halo_bin_tag",
+            "sod_halo_bin_radius",
+            "sod_halo_bin_rho",
+        ]
+        if is_hydro:
+            keys += [
+                "sod_halo_bin_gas_fraction",
+                "sod_halo_bin_gas_pthermal",
+                "sod_halo_bin_gas_pkinetic",
+            ]
+
+        for key in keys:
+            assert key in profs.keys(), f"`profs` missing required key {key}"
+
+        msk_h = profs["fof_halo_bin_tag"] == halo["fof_halo_tag"]
+        profs_h = {k: v[msk_h] for k, v in profs.items()}
+
+        r_edges = np.concatenate(([0.0], profs_h["sod_halo_bin_radius"]))
+        rho_tot = profs_h["sod_halo_bin_rho"]
+        if is_hydro:
+            rho_g = profs_h["sod_halo_bin_gas_fraction"] * rho_tot
+            P_th = profs_h["sod_halo_bin_gas_pthermal"]
+            P_nt = profs_h["sod_halo_bin_gas_pkinetic"]
+        else:
+            rho_g, P_th, P_nt = None, None, None
+
+        inst = cls(
+            r_edges,
+            rho_tot,
+            halo,
+            z,
+            cosmo,
+            rho_g=rho_g,
+            P_th=P_th,
+            P_nt=P_nt,
+            is_hydro=is_hydro,
         )
-        self.cutout_go = HACCCutout(
-            halo_go, parts_go, z, box_size, cosmo, is_hydro=False
+        return inst
+
+    @classmethod
+    def from_cutout(cls, cutout: HACCCutout, r_edges: NDArray):
+        _, rho_tot, drho_tot = utils.azimuthal_profile(
+            cutout.parts["mass"], cutout.parts["r"], r_edges
+        )
+        rho_tot /= 4.0 * np.pi * (r_edges[1:] ** 3 - r_edges[:-1] ** 3) / 3.0
+        drho_tot /= 4.0 * np.pi * (r_edges[1:] ** 3 - r_edges[:-1] ** 3) / 3.0
+
+        if cutout.is_hydro:
+            _, rho_g, drho_g = utils.azimuthal_profile(
+                cutout.gas_parts["rho"], cutout.gas_parts["r"], r_edges
+            )
+            _, P_th, dP_th = utils.azimuthal_profile(
+                cutout.gas_parts["P_th"], cutout.gas_parts["r"], r_edges
+            )
+            _, P_nt, dP_nt = utils.azimuthal_profile(
+                cutout.gas_parts["P_nt"], cutout.gas_parts["r"], r_edges
+            )
+        else:
+            rho_g, P_th, P_nt = None, None, None
+
+        inst = cls(
+            r_edges,
+            rho_tot,
+            cutout.halo,
+            cutout.z,
+            cutout.cosmo,
+            rho_g=rho_g,
+            P_th=P_th,
+            P_nt=P_nt,
+            is_hydro=cutout.is_hydro,
         )
 
-    def get_profiles(
-        self,
-        r_edges_R500: NDArray,
-        which_P: str = "tot",
-        norms: dict = {"rho": 1.0, "P": 1.0},
-    ):
-        h_go, h_hy = self.cutout_go.halo, self.cutout_hy.halo
-        p_go = self.cutout_go.parts
-        p_hy_g = self.cutout_hy.gas_parts
+        inst.drho_tot = drho_tot
+        if cutout.is_hydro:
+            inst.drho_g = drho_g
+            inst.dP_th = dP_th
+            inst.dP_nt = dP_nt
 
-        _, rho_hy_1d, drho_hy_1d = utils.azimuthal_profile(
-            p_hy_g["rho"] / norms["rho"],
-            p_hy_g["r"] / h_hy["sod_halo_R500c"],
-            r_edges_R500,
-        )
+        return inst
+
+    def get_scaled_gas_profiles(
+        self, norms: dict = {"rho": 1e14, "P": 1e20}, which_P: str = "tot"
+    ) -> dict:
         if which_P == "tot":
-            P_3d = p_hy_g["P_th"] + p_hy_g["P_nt"]
+            P = self.P_tot
         elif which_P == "th":
-            P_3d = p_hy_g["P_th"]
+            P = self.P_th
         else:
             raise Exception(
-                "`which_P` must be one of 'th' (thermal pressure)",
-                "or 'tot' (thermal+kinetic),",
-                f"not {which_P}",
+                f"'{which_P}' is not a valid pressure, should be 'tot' or 'th"
             )
-        _, P_hy_1d, dP_hy_1d = utils.azimuthal_profile(
-            P_3d / norms["P"],
-            p_hy_g["r"] / h_hy["sod_halo_R500c"],
-            r_edges_R500,
-        )
-        _, fnt_hy_1d, dfnt_hy_1d = utils.azimuthal_profile(
-            p_hy_g["P_nt"] / (p_hy_g["P_th"] + p_hy_g["P_nt"]),
-            p_hy_g["r"] / h_hy["sod_halo_R500c"],
-            r_edges_R500,
-        )
-
         return {
-            "r_R500": p_go["r"] / h_go["sod_halo_R500c"],
-            "r_edges_R500": r_edges_R500,
-            "phi": p_go["phi"],
-            "rho": rho_hy_1d,
-            "drho": drho_hy_1d,
-            "P": P_hy_1d,
-            "dP": dP_hy_1d,
-            "fnt": fnt_hy_1d,
-            "dfnt": dfnt_hy_1d,
-            "norms": norms,
+            "r_edges": self.r_edges,
+            "rho": self.rho_g / norms["rho"],
+            "P": P / norms["P"],
+            "fnt": self.f_nt,
         }
