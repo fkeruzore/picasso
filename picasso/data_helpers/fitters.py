@@ -13,7 +13,7 @@ def fit_gas_profiles(
     try_bfgs: bool = True,
     backup_optimizer: optax.GradientTransformation = optax.adam(1e-3),
     return_history: bool = False,
-) -> (dict, utils.FitResults, Union[utils.FitResults, None]):
+) -> (utils.FitResults, Union[utils.FitResults, None]):
     """
     Fit the polytropic gas model on a pair of halo matches, i.e. finds
     the best set of model parameters to infer the gas properties of a
@@ -22,13 +22,10 @@ def fit_gas_profiles(
 
     Parameters
     ----------
-    cutout_pair : HACCCutoutPair
-        A pair of (hydro / gravity-only) halo particle cutouts.
-    r_edges_R500 : Array
-        Radial binning to be used to compute the loss function.
-    which_P : str, optional
-        Which pressure should be fitted with the model, either thermal
-        ("th") or total (thermal+kinetic, "tot"); by default "tot"
+    cutout_go : HACCCutout
+        Cutout of grav-only halo particles.
+    gas_profs : dict
+        Radial profiles of gas properties.
     fit_fnt : bool, optional
         Wether or not to fit the non-thermal pressure fraction,
         by default False
@@ -109,9 +106,7 @@ def fit_gas_profiles(
     @jit
     def loss_fn_fnt(par):
         fnt_mod = compute_model_fnt(par)
-        return jnp.mean(
-            ((gas_profs["fnt"] - fnt_mod) / gas_profs["dfnt"]) ** 2
-        )
+        return jnp.mean((gas_profs["fnt"] - fnt_mod) ** 2)
 
     par_i = jnp.array([-1.0, -0.5, 0.75])
 
