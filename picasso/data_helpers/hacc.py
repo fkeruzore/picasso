@@ -123,6 +123,7 @@ class HACCSODProfiles(HACCDataset):
         self.z = z
 
         self.r_edges = r_edges
+        self.r = (r_edges[:-1] + r_edges[1:]) / 2.0
         self.rho_tot = rho_tot
         self.rho_g = rho_g
         self.P_th = P_th
@@ -147,7 +148,7 @@ class HACCSODProfiles(HACCDataset):
         keys = [
             "fof_halo_bin_tag",
             "sod_halo_bin_radius",
-            "sod_halo_bin_rho",
+            "sod_halo_bin_mass",
         ]
         if is_hydro:
             keys += [
@@ -163,7 +164,9 @@ class HACCSODProfiles(HACCDataset):
         profs_h = {k: v[msk_h] for k, v in profs.items()}
 
         r_edges = np.concatenate(([0.0], profs_h["sod_halo_bin_radius"]))
-        rho_tot = profs_h["sod_halo_bin_rho"]
+        rho_tot = profs_h["sod_halo_bin_mass"] / (
+            4.0 * np.pi * (r_edges[1:] ** 3 - r_edges[:-1] ** 3) / 3.0
+        )
         if is_hydro:
             rho_g = profs_h["sod_halo_bin_gas_fraction"] * rho_tot
             P_th = profs_h["sod_halo_bin_gas_pthermal"]
@@ -197,6 +200,14 @@ class HACCSODProfiles(HACCDataset):
             P_nt=P_nt,
             is_hydro=is_hydro,
         )
+
+        inst.drho_tot = rho_tot
+        if is_hydro:
+            inst.drho_g = inst.rho_g
+            inst.dP_th = inst.P_th
+            inst.dP_nt = inst.P_nt
+            inst.dP_tot = inst.P_tot
+
         return inst
 
     @classmethod
@@ -240,5 +251,32 @@ class HACCSODProfiles(HACCDataset):
             inst.drho_g = drho_g
             inst.dP_th = dP_th
             inst.dP_nt = dP_nt
+            inst.dP_tot = dP_th + dP_nt
 
         return inst
+
+    def rebin(self, r_edges):
+        old_r_edges = self.r_edges
+        old_r = (old_r_edges[:-1] + old_r_edges[1:]) / 2.0
+        new_r_edges = r_edges
+        new_r = (new_r_edges[:-1] + new_r_edges[1:]) / 2.0
+
+        def interp_plaw(x, xp, fp, left=None, right=None):
+            lx, lxp, lfp = np.log(x), np.log(xp), np.log(fp)
+            lf = np.interp(lx, lxp, lfp, left=left, right=right)
+            return np.exp(lf)
+
+        self.r_edges = new_r_edges
+        self.r = new_r
+        self.rho_tot = interp_plaw(new_r, old_r, self.rho_tot)
+        self.drho_tot = interp_plaw(new_r, old_r, self.drho_tot)
+        if self.is_hydro:
+            self.rho_g = interp_plaw(new_r, old_r, self.rho_g)
+            self.P_th = interp_plaw(new_r, old_r, self.P_th)
+            self.P_nt = interp_plaw(new_r, old_r, self.P_nt)
+            self.P_tot = interp_plaw(new_r, old_r, self.P_tot)
+            self.f_nt = interp_plaw(new_r, old_r, self.f_nt)
+            self.drho_g = interp_plaw(new_r, old_r, self.drho_g)
+            self.dP_th = interp_plaw(new_r, old_r, self.dP_th)
+            self.dP_nt = interp_plaw(new_r, old_r, self.dP_nt)
+            self.dP_tot = interp_plaw(new_r, old_r, self.dP_tot)
