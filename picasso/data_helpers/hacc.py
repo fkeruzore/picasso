@@ -141,6 +141,8 @@ class HACCSODProfiles(HACCDataset):
         z: float,
         cosmo: Cosmology,
         is_hydro: bool = False,
+        r_min: float = 0.0,
+        r_max: float = np.inf,
     ):
         keys = [
             "fof_halo_bin_tag",
@@ -174,6 +176,15 @@ class HACCSODProfiles(HACCDataset):
         if is_hydro:
             P_th *= units_P_obs2sim
             P_nt *= units_P_obs2sim
+
+        # Cut radii
+        r_ok = (r_edges[:-1] >= r_min) & (r_edges[1:] <= r_max)
+        r_edges = r_edges[(r_edges >= r_min) & (r_edges <= r_max)]
+        rho_tot = rho_tot[r_ok]
+        if is_hydro:
+            rho_g = rho_g[r_ok]
+            P_th = P_th[r_ok]
+            P_nt = P_nt[r_ok]
 
         inst = cls(
             r_edges,
