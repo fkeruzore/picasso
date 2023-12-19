@@ -1,5 +1,4 @@
 import jax.numpy as jnp
-from jax import jit
 import optax
 from typing import Union
 from .hacc import HACCCutout, HACCSODProfiles
@@ -89,7 +88,6 @@ def fit_gas_profiles(
         )
         return rho_mod_1d, P_mod_1d
 
-    # @jit
     def loss_fn_pol(par):
         rho_mod, P_mod = compute_model_pol(par)
         lsq_rho = jnp.mean(((rho_dat - rho_mod) / drho_dat) ** 2)
@@ -126,7 +124,6 @@ def fit_gas_profiles(
         _, fnt_mod_1d, _ = utils.azimuthal_profile(fnt_mod_3d, r_pts, r_edges)
         return fnt_mod_1d
 
-    @jit
     def loss_fn_fnt(par):
         fnt_mod = compute_model_fnt(par)
         return jnp.mean((gas_profs.f_nt - fnt_mod) ** 2)
