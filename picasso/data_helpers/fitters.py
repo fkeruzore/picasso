@@ -2,13 +2,14 @@ import jax.numpy as jnp
 from jax import jit
 import optax
 from typing import Union
-from .hacc import HACCCutout
+from .hacc import HACCCutout, HACCSODProfiles
 from .. import utils, polytrop, nonthermal
 
 
 def fit_gas_profiles(
     cutout_go: HACCCutout,
-    gas_profs: dict,
+    gas_profs: HACCSODProfiles,
+    which_P: str = "tot",
     fit_fnt: bool = False,
     try_bfgs: bool = True,
     backup_optimizer: optax.GradientTransformation = optax.adam(1e-3),
@@ -24,8 +25,12 @@ def fit_gas_profiles(
     ----------
     cutout_go : HACCCutout
         Cutout of grav-only halo particles.
-    gas_profs : dict
+    gas_profs : HACCSODProfiles
         Radial profiles of gas properties.
+    which_P : str, optional
+        Which pressure should be fitted with the polytropic model, one
+        of 'th' (thermal pressure) or 'tot' (thermal+kinetic),
+        by default 'tot'
     fit_fnt : bool, optional
         Wether or not to fit the non-thermal pressure fraction,
         by default False
@@ -42,16 +47,31 @@ def fit_gas_profiles(
 
     Returns
     -------
-    dict
-        Data
     picasso.utils.FitResults
         Polytropic fit results
     picasso.utils.FitResults or None
         Non-thermal fraction fit results
     """
-    norms = {"rho": 1e14, "P": 1e20}
+
+    # Pre-format data
     phi_pts, r_pts = cutout_go.parts["phi"], cutout_go.parts["r"]
-    r_edges = gas_profs["r_edges"]
+    r_edges = gas_profs.r_edges
+    rho_dat, drho_dat = gas_profs.rho_g, gas_profs.drho_g
+    if which_P == "tot":
+        P_dat, dP_dat = gas_profs.P_tot, gas_profs.dP_tot
+    elif which_P == "th":
+        P_dat, dP_dat = gas_profs.P_th, gas_profs.dP_th
+    else:
+        raise Exception(
+            "`which_P` must be one of 'th' (thermal pressure) or 'tot'"
+            + f"(thermal+kinetic), not '{which_P}'"
+        )
+
+    norms = {"rho": jnp.nanmean(rho_dat), "P": jnp.nanmean(P_dat)}
+    rho_dat /= norms["rho"]
+    drho_dat /= norms["rho"]
+    P_dat /= norms["P"]
+    dP_dat /= norms["P"]
 
     # Fit polytropic model
     def compute_model_pol(par):
@@ -69,15 +89,14 @@ def fit_gas_profiles(
         )
         return rho_mod_1d, P_mod_1d
 
-    @jit
+    # @jit
     def loss_fn_pol(par):
         rho_mod, P_mod = compute_model_pol(par)
-        return 0.5 * (
-            jnp.mean((gas_profs["rho"] - rho_mod) ** 2)
-            + jnp.mean((gas_profs["P"] - P_mod) ** 2)
-        )
+        lsq_rho = jnp.mean(((rho_dat - rho_mod) / drho_dat) ** 2)
+        lsq_P = jnp.mean(((P_dat - P_mod) / dP_dat) ** 2)
+        return (lsq_rho + lsq_P) / 2.0
 
-    rho_0, P_0 = gas_profs["rho"][0], gas_profs["P"][0]
+    rho_0, P_0 = rho_dat[0] * norms["rho"], P_dat[0] * norms["P"]
     par_i = jnp.array(
         [jnp.log10(rho_0), jnp.log10(P_0), 1.2, jnp.log10(rho_0 / P_0 / 3)]
     )
@@ -90,6 +109,10 @@ def fit_gas_profiles(
         backup_target_loss=1e-2,
         return_history=return_history,
     )
+    bf_model = list(compute_model_pol(res_pol.bf))
+    bf_model[0] *= norms["rho"]
+    bf_model[1] *= norms["P"]
+    res_pol.bf_model = bf_model
 
     if not fit_fnt:
         return res_pol
@@ -106,7 +129,7 @@ def fit_gas_profiles(
     @jit
     def loss_fn_fnt(par):
         fnt_mod = compute_model_fnt(par)
-        return jnp.mean((gas_profs["fnt"] - fnt_mod) ** 2)
+        return jnp.mean((gas_profs.f_nt - fnt_mod) ** 2)
 
     par_i = jnp.array([-1.0, -0.5, 0.75])
 
@@ -118,6 +141,7 @@ def fit_gas_profiles(
         backup_target_loss=1e-2,
         return_history=return_history,
     )
+    res_fnt.bf_model = compute_model_fnt(res_fnt.bf)
 
     return res_pol, res_fnt
 
