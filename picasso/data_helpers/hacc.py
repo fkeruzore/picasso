@@ -1,8 +1,12 @@
 import numpy as np
 from numpy.typing import NDArray
 from astropy.cosmology import Cosmology
+from astropy.units import Unit
 from typing import Union
 from .. import utils
+
+units_P_sim2obs = Unit("Msun Mpc-3 km2 s-2").to("keV cm-3")
+units_P_obs2sim = 1.0 / units_P_sim2obs
 
 
 def _comov2prop_v(v, x, a, adot):
@@ -165,6 +169,12 @@ class HACCSODProfiles(HACCDataset):
         else:
             rho_g, P_th, P_nt = None, None, None
 
+        # Units: rho is h2 Msun cMpc-3, P is h2 keV ccm-3
+        # -> P conversion needed
+        if is_hydro:
+            P_th *= units_P_obs2sim
+            P_nt *= units_P_obs2sim
+
         inst = cls(
             r_edges,
             rho_tot,
@@ -199,6 +209,9 @@ class HACCSODProfiles(HACCDataset):
         else:
             rho_g, P_th, P_nt = None, None, None
 
+        # Units: rho is h2 Msun cMpc-3, P is h2 keV ccm-3
+        # -> no conversion needed
+
         inst = cls(
             r_edges,
             rho_tot,
@@ -218,21 +231,3 @@ class HACCSODProfiles(HACCDataset):
             inst.dP_nt = dP_nt
 
         return inst
-
-    def get_scaled_gas_profiles(
-        self, norms: dict = {"rho": 1e14, "P": 1e20}, which_P: str = "tot"
-    ) -> dict:
-        if which_P == "tot":
-            P = self.P_tot
-        elif which_P == "th":
-            P = self.P_th
-        else:
-            raise Exception(
-                f"'{which_P}' is not a valid pressure, should be 'tot' or 'th"
-            )
-        return {
-            "r_edges": self.r_edges,
-            "rho": self.rho_g / norms["rho"],
-            "P": P / norms["P"],
-            "fnt": self.f_nt,
-        }
