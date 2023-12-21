@@ -55,11 +55,11 @@ def fit_gas_profiles(
     # Pre-format data
     phi_pts, r_pts = cutout_go.parts["phi"], cutout_go.parts["r"]
     r_edges = gas_profs.r_edges
-    rho_dat, drho_dat = gas_profs.rho_g, gas_profs.drho_g
+    rho_dat, drho_dat = gas_profs.rho_g, gas_profs.rho_g
     if which_P == "tot":
-        P_dat, dP_dat = gas_profs.P_tot, gas_profs.dP_tot
+        P_dat, dP_dat = gas_profs.P_tot, gas_profs.P_tot
     elif which_P == "th":
-        P_dat, dP_dat = gas_profs.P_th, gas_profs.dP_th
+        P_dat, dP_dat = gas_profs.P_th, gas_profs.P_th
     else:
         raise Exception(
             "`which_P` must be one of 'th' (thermal pressure) or 'tot'"
