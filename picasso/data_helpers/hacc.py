@@ -1,4 +1,5 @@
 import numpy as np
+import jax.numpy as jnp
 from numpy.typing import NDArray
 from astropy.cosmology import Cosmology
 from astropy.units import Unit
@@ -213,7 +214,10 @@ class HACCSODProfiles(HACCDataset):
     @classmethod
     def from_cutout(cls, cutout: HACCCutout, r_edges: NDArray):
         _, rho_tot, drho_tot = utils.azimuthal_profile(
-            cutout.parts["mass"], cutout.parts["r"], r_edges
+            cutout.parts["mass"],
+            cutout.parts["r"],
+            r_edges,
+            stats=(jnp.nansum, jnp.nanstd),
         )
         rho_tot /= 4.0 * np.pi * (r_edges[1:] ** 3 - r_edges[:-1] ** 3) / 3.0
         drho_tot /= 4.0 * np.pi * (r_edges[1:] ** 3 - r_edges[:-1] ** 3) / 3.0
