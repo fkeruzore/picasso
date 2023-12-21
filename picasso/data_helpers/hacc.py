@@ -11,7 +11,7 @@ units_P_obs2sim = 1.0 / units_P_sim2obs
 
 
 def _comov2prop_v(v, x, a, adot):
-    return a * v  # + adot * x
+    return a * v + adot * x
 
 
 class HACCDataset:
@@ -54,21 +54,17 @@ class HACCCutout(HACCDataset):
         )  # comoving distance from center, h-1 cMpc
 
         # Particle velocities
-        if all([f"v{_}" in parts for _ in "xyz"]):
-            xyz_h = {x: halo[f"fof_halo_center_{x}"] for x in "xyz"}
-            vxyz_h = {x: halo[f"fof_halo_com_{x}"] for x in "xyz"}
-            vxyz_h_p = {
-                x: _comov2prop_v(vxyz_h[x], xyz_h[x], a, adot) for x in "xyz"
-            }  # Proper halo velocity, km2 s-2
-            vxyz_p_p = {
-                x: _comov2prop_v(parts["vx"], parts["x"], a, adot)
+        if all([f"v{_}" in parts for _ in "xyz"]) and is_hydro:
+            _x = {x: parts[x] - halo[f"sod_halo_com_{x}_gas"] for x in "xyz"}
+            _v = {
+                x: parts[f"v{x}"] - halo[f"sod_halo_com_v{x}_gas"]
                 for x in "xyz"
-            }  # Proper particle velocities, km2 s-2
+            }
             parts["v2_proper"] = (
-                (vxyz_p_p["x"] - vxyz_h_p["x"]) ** 2
-                + (vxyz_p_p["y"] - vxyz_h_p["y"]) ** 2
-                + (vxyz_p_p["z"] - vxyz_h_p["z"]) ** 2
-            )  # Squared proper particle velocities in halo frame, km2 s-2
+                _comov2prop_v(_v["x"], _x["x"], a, adot) ** 2
+                + _comov2prop_v(_v["y"], _x["y"], a, adot) ** 2
+                + _comov2prop_v(_v["z"], _x["z"], a, adot) ** 2
+            )
 
         # Normalized potential
         if "phi" in parts.keys():
@@ -213,25 +209,40 @@ class HACCSODProfiles(HACCDataset):
 
     @classmethod
     def from_cutout(cls, cutout: HACCCutout, r_edges: NDArray):
-        _, rho_tot, drho_tot = utils.azimuthal_profile(
+        _, m_tot, _ = utils.azimuthal_profile(
             cutout.parts["mass"],
             cutout.parts["r"],
             r_edges,
             stats=(jnp.nansum, jnp.nanstd),
         )
-        rho_tot /= 4.0 * np.pi * (r_edges[1:] ** 3 - r_edges[:-1] ** 3) / 3.0
-        drho_tot /= 4.0 * np.pi * (r_edges[1:] ** 3 - r_edges[:-1] ** 3) / 3.0
+        shell_vols = 4.0 * np.pi * (r_edges[1:] ** 3 - r_edges[:-1] ** 3) / 3.0
+        rho_tot = m_tot / shell_vols
 
         if cutout.is_hydro:
-            _, rho_g, drho_g = utils.azimuthal_profile(
-                cutout.gas_parts["rho"], cutout.gas_parts["r"], r_edges
+            # Gas density = gas mass in shells, divided by shell volumes
+            _, m_g, _ = utils.azimuthal_profile(
+                cutout.gas_parts["mass"],
+                cutout.gas_parts["r"],
+                r_edges,
+                stats=(jnp.nansum, jnp.nanstd),
             )
-            _, P_th, dP_th = utils.azimuthal_profile(
-                cutout.gas_parts["P_th"], cutout.gas_parts["r"], r_edges
+            rho_g = m_g / shell_vols
+
+            # Gas thermal pressure
+            _, kbT_g, _ = utils.azimuthal_profile(
+                cutout.a * 2.0 * cutout.gas_parts["uu"] / 3.0,
+                cutout.gas_parts["r"],
+                r_edges,
             )
-            _, P_nt, dP_nt = utils.azimuthal_profile(
-                cutout.gas_parts["P_nt"], cutout.gas_parts["r"], r_edges
+            P_th = rho_g * kbT_g
+
+            # Gas non-thermal pressure
+            _, v2_g, _ = utils.azimuthal_profile(
+                cutout.gas_parts["v2_proper"] / cutout.a,
+                cutout.gas_parts["r"],
+                r_edges,
             )
+            P_nt = rho_g * v2_g / 3.0
         else:
             rho_g, P_th, P_nt = None, None, None
 
@@ -250,12 +261,12 @@ class HACCSODProfiles(HACCDataset):
             is_hydro=cutout.is_hydro,
         )
 
-        inst.drho_tot = drho_tot
-        if cutout.is_hydro:
-            inst.drho_g = drho_g
-            inst.dP_th = dP_th
-            inst.dP_nt = dP_nt
-            inst.dP_tot = dP_th + dP_nt
+        # inst.drho_tot = drho_tot
+        # if cutout.is_hydro:
+        #     inst.drho_g = drho_g
+        #     inst.dP_th = dP_th
+        #     inst.dP_nt = dP_nt
+        #     inst.dP_tot = dP_th + dP_nt
 
         return inst
 
