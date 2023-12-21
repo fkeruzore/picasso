@@ -8,56 +8,83 @@ import pytest
 
 cosmo = FlatLambdaCDM(67.66, 0.30964, Ob0=0.04897)
 
+# Use full files if available, down-sampled if not
 here = os.path.dirname(os.path.abspath(__file__))
-d = {}
-with h5py.File(f"{here}/data/cutout_data.hdf5", "r") as f:
-    for k, v in f.items():  # h, h_ad, parts_ad, parts_go, profs_ad
-        d[k] = {}
-        for k2, v2 in v.items():
-            d[k][k2] = np.array(v2)
-R500 = float(d["h"]["sod_halo_R500c"])
+path = f"{here}/data"
+files = {s: f"{path}/data_1halo_{s}_full.hdf5" for s in ["624", "498"]}
+if not all([os.path.isfile(f) for f in files.values()]):
+    files = {s: f"{path}/data_1halo_{s}_1pct.hdf5" for s in ["624", "498"]}
 
 
-@pytest.mark.parametrize("case", ["grav-only", "hydro"])
-def test_hacc_cutout(case):
-    attrs = ["halo", "a", "z", "parts"]
-    if case == "grav-only":
-        cutout = hacc.HACCCutout(
-            d["h"], d["parts_go"], 0.0, 576.0, cosmo, is_hydro=False
+d = {"624": {}, "498": {}}
+for snap in d.keys():
+    with h5py.File(files[snap], "r") as f:
+        for k, v in f.items():  # h, h_ad, parts_ad, parts_go, profs_ad
+            d[snap][k] = {}
+            for k2, v2 in v.items():
+                d[snap][k][k2] = np.array(v2)
+
+
+@pytest.mark.parametrize("z", [0.0, 0.5])
+def test_hacc_cutouts_profiles(z):
+    if z == 0.0:
+        snap = "624"
+    elif z == 0.5:
+        snap = "498"
+    profs_hy_p = hacc.HACCSODProfiles.from_sodpropertybins(
+        d[snap]["h_ad"], d[snap]["profs_ad"], z, cosmo, is_hydro=True
+    )
+    cutout_hy = hacc.HACCCutout(
+        d[snap]["h_ad"], d[snap]["parts_ad"], z, 576.0, cosmo, is_hydro=True
+    )
+    profs_hy_c = hacc.HACCSODProfiles.from_cutout(
+        cutout_hy, profs_hy_p.r_edges
+    )
+    for prop in ["rho_tot", "rho_g", "P_th", "f_nt"]:
+        p, c = profs_hy_p.__dict__[prop], profs_hy_c.__dict__[prop]
+        w = profs_hy_p.r > 0.05
+        chi2 = np.nanmean(((p - c) / p)[w] ** 2)
+        assert chi2 < 0.05, (
+            f"{prop} profiles from SODpropertybins and cutout "
+            + f"incompatible: chi2={chi2:.3f}"
         )
-    elif case == "hydro":
-        cutout = hacc.HACCCutout(
-            d["h_ad"], d["parts_ad"], 0.0, 576.0, cosmo, is_hydro=True
-        )
-        attrs += ["gas_parts"]
-
-    for attr in attrs:
-        assert hasattr(cutout, attr), f"Missing cutout attribute: {attr}"
 
 
-@pytest.mark.parametrize("case", ["from profs", "from particles"])
-def test_hacc_profile(case):
-    if case == "from profs":
+@pytest.mark.parametrize(
+    ["case", "z"],
+    [
+        ("from profiles", 0.0),
+        ("from particles", 0.0),
+        ("from profiles", 0.5),
+        ("from particles", 0.5),
+    ],
+)
+def test_fit_hacc_profiles(case, z):
+    if z == 0.0:
+        snap = "624"
+    elif z == 0.5:
+        snap = "498"
+    cutout_go = hacc.HACCCutout(
+        d[snap]["h"], d[snap]["parts_go"], z, 576.0, cosmo, is_hydro=False
+    )
+    if case == "from profiles":
         profs_hy = hacc.HACCSODProfiles.from_sodpropertybins(
-            d["h_ad"], d["profs_ad"], 0.0, cosmo, is_hydro=True
+            d[snap]["h_ad"], d[snap]["profs_ad"], z, cosmo, is_hydro=True
         )
+        profs_hy.rebin(jnp.logspace(-1.25, 0.25, 8))
     elif case == "from particles":
-        cutout = hacc.HACCCutout(
-            d["h_ad"], d["parts_ad"], 0.0, 576.0, cosmo, is_hydro=True
+        cutout_hy = hacc.HACCCutout(
+            d[snap]["h_ad"],
+            d[snap]["parts_ad"],
+            z,
+            576.0,
+            cosmo,
+            is_hydro=True,
         )
         profs_hy = hacc.HACCSODProfiles.from_cutout(
-            cutout, jnp.logspace(-1.2, 0.3, 16) * R500
+            cutout_hy, jnp.logspace(-1.25, 0.25, 8)
         )
-    profs_hy.rebin(jnp.logspace(-1.0, 0.1, 8) * R500)
 
-
-def test_fit_gas_profiles():
-    cutout_go = hacc.HACCCutout(
-        d["h"], d["parts_go"], 0.0, 576.0, cosmo, is_hydro=False
-    )
-    profs_hy = hacc.HACCSODProfiles.from_sodpropertybins(
-        d["h_ad"], d["profs_ad"], 0.0, cosmo, is_hydro=True
-    )
     res_pol = fitters.fit_gas_profiles(
         cutout_go,
         profs_hy,
@@ -66,23 +93,3 @@ def test_fit_gas_profiles():
         return_history=True,
     )
     assert res_pol.bl < 1.0, f"Large loss value: {res_pol.bl:.2e}"
-
-
-if __name__ == "__main__":
-    import time
-
-    ti = time.time()
-    cutout_go = hacc.HACCCutout(
-        d["h"], d["parts_go"], 0.0, 576.0, cosmo, is_hydro=False
-    )
-    profs_hy = hacc.HACCSODProfiles.from_sodpropertybins(
-        d["h_ad"], d["profs_ad"], 0.0, cosmo, is_hydro=True
-    )
-    res_pol = fitters.fit_gas_profiles(
-        cutout_go,
-        profs_hy,
-        which_P="tot",
-        fit_fnt=False,
-        return_history=True,
-    )
-    print(time.time() - ti)
