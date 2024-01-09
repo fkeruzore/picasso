@@ -13,6 +13,7 @@ def fit_gas_profiles(
     try_bfgs: bool = True,
     backup_optimizer: optax.GradientTransformation = optax.adam(1e-3),
     return_history: bool = False,
+    n_steps: int = 10_000,
 ) -> (utils.FitResults, Union[utils.FitResults, None]):
     """
     Fit the polytropic gas model on a pair of halo matches, i.e. finds
@@ -43,6 +44,8 @@ def fit_gas_profiles(
     return_history : bool, optional
         If True, return the gradient descent evolution in parameter and
         loss space, by default False
+    n_steps : int, optional
+        Maximum number of gradient descent steps, by default 10_000,
 
     Returns
     -------
@@ -106,6 +109,7 @@ def fit_gas_profiles(
         backup_optimizer=backup_optimizer,
         backup_target_loss=1e-2,
         return_history=return_history,
+        n_steps=n_steps,
     )
     bf_model = list(compute_model_pol(res_pol.bf))
     bf_model[0] *= norms["rho"]
@@ -137,6 +141,7 @@ def fit_gas_profiles(
         backup_optimizer=backup_optimizer,
         backup_target_loss=1e-2,
         return_history=return_history,
+        n_steps=n_steps,
     )
     res_fnt.bf_model = compute_model_fnt(res_fnt.bf)
 

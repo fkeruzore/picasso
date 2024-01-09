@@ -91,5 +91,6 @@ def test_fit_hacc_profiles(case, z):
         which_P="tot",
         fit_fnt=False,
         return_history=True,
+        n_steps=5_000,
     )
     assert res_pol.bl < 1.0, f"Large loss value: {res_pol.bl:.2e}"
