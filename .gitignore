@@ -131,3 +131,4 @@ dmypy.json
 # Custom
 .DS_Store
 tests/data/*full.hdf5
+scratch/
