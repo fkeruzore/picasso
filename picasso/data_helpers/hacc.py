@@ -218,6 +218,13 @@ class HACCSODProfiles(HACCDataset):
         shell_vols = 4.0 * np.pi * (r_edges[1:] ** 3 - r_edges[:-1] ** 3) / 3.0
         rho_tot = m_tot / shell_vols
 
+        _, phi_tot, _ = utils.azimuthal_profile(
+            cutout.parts["phi"],
+            cutout.parts["r"],
+            r_edges,
+            stats=(jnp.nanmean, jnp.nanstd),
+        )
+
         if cutout.is_hydro:
             # Gas density = gas mass in shells, divided by shell volumes
             _, m_g, _ = utils.azimuthal_profile(
@@ -260,6 +267,7 @@ class HACCSODProfiles(HACCDataset):
             P_nt=P_nt,
             is_hydro=cutout.is_hydro,
         )
+        inst.phi_tot = phi_tot
 
         # inst.drho_tot = drho_tot
         # if cutout.is_hydro:
