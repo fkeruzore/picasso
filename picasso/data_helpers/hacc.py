@@ -105,10 +105,11 @@ class HACCSODProfiles(HACCDataset):
     def __init__(
         self,
         r_edges: NDArray,
-        rho_tot: NDArray,
         halo: dict,
         z: float,
         cosmo: Cosmology,
+        rho_tot: Union[NDArray, None] = None,
+        phi_tot: Union[NDArray, None] = None,
         rho_g: Union[NDArray, None] = None,
         P_th: Union[NDArray, None] = None,
         P_nt: Union[NDArray, None] = None,
@@ -122,6 +123,7 @@ class HACCSODProfiles(HACCDataset):
         self.r_edges = r_edges
         self.r = (r_edges[:-1] + r_edges[1:]) / 2.0
         self.rho_tot = rho_tot
+        self.phi_tot = phi_tot
         self.rho_g = rho_g
         self.P_th = P_th
         self.P_nt = P_nt
@@ -130,6 +132,22 @@ class HACCSODProfiles(HACCDataset):
             self.f_nt = P_nt / self.P_tot
         else:
             self.P_tot, self.f_nt = None, None
+
+        possible_profs = [
+            "rho_tot",
+            "phi_tot",
+            "rho_g",
+            "P_th",
+            "P_nt",
+            "P_tot",
+            "f_nt",
+        ]
+        possible_profs = [*possible_profs, *[f"d{p}" for p in possible_profs]]
+        self.profs = [
+            p
+            for p in possible_profs
+            if (hasattr(self, p) and (getattr(self, p) is not None))
+        ]
 
     @classmethod
     def from_sodpropertybins(
@@ -188,10 +206,10 @@ class HACCSODProfiles(HACCDataset):
 
         inst = cls(
             r_edges,
-            rho_tot,
             halo,
             z,
             cosmo,
+            rho_tot=rho_tot,
             rho_g=rho_g,
             P_th=P_th,
             P_nt=P_nt,
@@ -258,23 +276,16 @@ class HACCSODProfiles(HACCDataset):
 
         inst = cls(
             r_edges,
-            rho_tot,
             cutout.halo,
             cutout.z,
             cutout.cosmo,
+            rho_tot=rho_tot,
+            phi_tot=phi_tot,
             rho_g=rho_g,
             P_th=P_th,
             P_nt=P_nt,
             is_hydro=cutout.is_hydro,
         )
-        inst.phi_tot = phi_tot
-
-        # inst.drho_tot = drho_tot
-        # if cutout.is_hydro:
-        #     inst.drho_g = drho_g
-        #     inst.dP_th = dP_th
-        #     inst.dP_nt = dP_nt
-        #     inst.dP_tot = dP_th + dP_nt
 
         return inst
 
@@ -291,15 +302,6 @@ class HACCSODProfiles(HACCDataset):
 
         self.r_edges = new_r_edges
         self.r = new_r
-        self.rho_tot = interp_plaw(new_r, old_r, self.rho_tot)
-        self.drho_tot = interp_plaw(new_r, old_r, self.drho_tot)
-        if self.is_hydro:
-            self.rho_g = interp_plaw(new_r, old_r, self.rho_g)
-            self.P_th = interp_plaw(new_r, old_r, self.P_th)
-            self.P_nt = interp_plaw(new_r, old_r, self.P_nt)
-            self.P_tot = interp_plaw(new_r, old_r, self.P_tot)
-            self.f_nt = interp_plaw(new_r, old_r, self.f_nt)
-            self.drho_g = interp_plaw(new_r, old_r, self.drho_g)
-            self.dP_th = interp_plaw(new_r, old_r, self.dP_th)
-            self.dP_nt = interp_plaw(new_r, old_r, self.dP_nt)
-            self.dP_tot = interp_plaw(new_r, old_r, self.dP_tot)
+
+        for name in self.profs:
+            setattr(self, name, interp_plaw(new_r, old_r, getattr(self, name)))
