@@ -143,11 +143,9 @@ class HACCSODProfiles(HACCDataset):
             "P_tot",
             "f_nt",
         ]
-        possible_profs = [*possible_profs, *[f"d{p}" for p in possible_profs]]
-        self.profs = [
-            p
-            for p in possible_profs
-            if (hasattr(self, p) and (getattr(self, p) is not None))
+        self.possible_profs = [
+            *possible_profs,
+            *[f"d{p}" for p in possible_profs],
         ]
 
     @classmethod
@@ -290,6 +288,15 @@ class HACCSODProfiles(HACCDataset):
 
         return inst
 
+    @property
+    def prof_names(self):
+        profs = [
+            p
+            for p in self.possible_profs
+            if (hasattr(self, p) and (getattr(self, p) is not None))
+        ]
+        return list(profs)
+
     def rebin(self, r_edges):
         old_r_edges = self.r_edges
         old_r = (old_r_edges[:-1] + old_r_edges[1:]) / 2.0
@@ -304,5 +311,5 @@ class HACCSODProfiles(HACCDataset):
         self.r_edges = new_r_edges
         self.r = new_r
 
-        for name in self.profs:
+        for name in self.prof_names:
             setattr(self, name, interp_plaw(new_r, old_r, getattr(self, name)))
