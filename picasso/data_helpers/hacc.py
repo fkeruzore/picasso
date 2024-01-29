@@ -68,7 +68,8 @@ class HACCCutout(HACCDataset):
 
         # Normalized potential
         if "phi" in parts.keys():
-            parts["phi"] -= parts["phi"].min()
+            self.phi_0 = parts["phi"].min()
+            parts["phi"] -= self.phi_0
 
         # Is it a hydro sim? If yes, compute gas properties
         if is_hydro:
