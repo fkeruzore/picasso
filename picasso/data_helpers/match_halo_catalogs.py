@@ -94,17 +94,20 @@ def match_halo_catalogs(
         dsort = np.argsort(dists)
         cands_dsorted = {k: v[dsort] for k, v in cands.items()}
 
+        success = False
         for j_hy in range(len(dsort)):
             M_j = cands_dsorted[key_M][j_hy]
             if np.abs(M_j - M_i) < (d_M_max * M_i):
                 tag_hy = cands_dsorted[key_tag][j_hy]
                 tags_matches_i[f"{key_tag}_HY"] = tag_hy
+                success = True
                 break
 
         tags_matches.append(tags_matches_i)
-        tags_hy_match_in_go[i_go] = tag_hy
-        i_hy = np.where(halos_hy[key_tag] == tag_hy)[0][0]
-        tags_go_match_in_hy[i_hy] = tag
+        if success:
+            tags_hy_match_in_go[i_go] = tag_hy
+            i_hy = np.where(halos_hy[key_tag] == tag_hy)[0][0]
+            tags_go_match_in_hy[i_hy] = tag
 
     tags_matches = Table(tags_matches)
     if verbose:

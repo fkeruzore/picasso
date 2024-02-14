@@ -8,40 +8,89 @@ import pytest
 
 cosmo = FlatLambdaCDM(67.66, 0.30964, Ob0=0.04897)
 
+# Use full files if available, down-sampled if not
 here = os.path.dirname(os.path.abspath(__file__))
-d = {}
-with h5py.File(f"{here}/data/cutout_data.hdf5", "r") as f:
-    for k, v in f.items():  # halo_ad, halo_go, parts_ad, parts_go
-        d[k] = {}
-        for k2, v2 in v.items():
-            d[k][k2] = np.array(v2)
-d_nov = {k: v for k, v in d.items()}
-for x in "xyz":
-    _ = d_nov["parts_go"].pop(f"v{x}")
+path = f"{here}/data"
+files = {s: f"{path}/data_1halo_{s}_full.hdf5" for s in ["624", "498"]}
+if not all([os.path.isfile(f) for f in files.values()]):
+    files = {s: f"{path}/data_1halo_{s}_1pct.hdf5" for s in ["624", "498"]}
 
 
-@pytest.mark.parametrize("has_velocities", [True, False])
-def test_hacc_coutout_pair(has_velocities):
-    test_data = d if has_velocities else d_nov
-    _ = hacc.HACCCutoutPair(
-        test_data["halo_go"],
-        test_data["halo_hy"],
-        test_data["parts_go"],
-        test_data["parts_hy"],
-        0.0,
-        576.0,
-        cosmo,
+d = {"624": {}, "498": {}}
+for snap in d.keys():
+    with h5py.File(files[snap], "r") as f:
+        for k, v in f.items():  # h, h_ad, parts_ad, parts_go, profs_ad
+            d[snap][k] = {}
+            for k2, v2 in v.items():
+                d[snap][k][k2] = np.array(v2)
+
+
+@pytest.mark.parametrize("z", [0.0, 0.5])
+def test_hacc_cutouts_profiles(z):
+    if z == 0.0:
+        snap = "624"
+    elif z == 0.5:
+        snap = "498"
+    profs_hy_p = hacc.HACCSODProfiles.from_sodpropertybins(
+        d[snap]["h_ad"], d[snap]["profs_ad"], z, cosmo, is_hydro=True
     )
-
-
-def test_fit_hacc_cutouts():
-    cutouts = hacc.HACCCutoutPair(
-        d["halo_go"],
-        d["halo_hy"],
-        d["parts_go"],
-        d["parts_hy"],
-        0.0,
-        576.0,
-        cosmo,
+    cutout_hy = hacc.HACCCutout(
+        d[snap]["h_ad"], d[snap]["parts_ad"], z, 576.0, cosmo, is_hydro=True
     )
-    _ = fitters.fit_gas_profiles(cutouts, jnp.logspace(-1, 0, 10))
+    profs_hy_c = hacc.HACCSODProfiles.from_cutout(
+        cutout_hy, profs_hy_p.r_edges
+    )
+    for prop in ["rho_tot", "rho_g", "P_th", "f_nt"]:
+        p, c = profs_hy_p.__dict__[prop], profs_hy_c.__dict__[prop]
+        w = profs_hy_p.r > 0.05
+        chi2 = np.nanmean(((p - c) / p)[w] ** 2)
+        assert chi2 < 0.05, (
+            f"{prop} profiles from SODpropertybins and cutout "
+            + f"incompatible: chi2={chi2:.3f}"
+        )
+
+
+@pytest.mark.parametrize(
+    ["case", "z"],
+    [
+        ("from profiles", 0.0),
+        ("from particles", 0.0),
+        ("from profiles", 0.5),
+        ("from particles", 0.5),
+    ],
+)
+def test_fit_hacc_profiles(case, z):
+    if z == 0.0:
+        snap = "624"
+    elif z == 0.5:
+        snap = "498"
+    cutout_go = hacc.HACCCutout(
+        d[snap]["h"], d[snap]["parts_go"], z, 576.0, cosmo, is_hydro=False
+    )
+    if case == "from profiles":
+        profs_hy = hacc.HACCSODProfiles.from_sodpropertybins(
+            d[snap]["h_ad"], d[snap]["profs_ad"], z, cosmo, is_hydro=True
+        )
+        profs_hy.rebin(jnp.logspace(-1.25, 0.25, 8))
+    elif case == "from particles":
+        cutout_hy = hacc.HACCCutout(
+            d[snap]["h_ad"],
+            d[snap]["parts_ad"],
+            z,
+            576.0,
+            cosmo,
+            is_hydro=True,
+        )
+        profs_hy = hacc.HACCSODProfiles.from_cutout(
+            cutout_hy, jnp.logspace(-1.25, 0.25, 8)
+        )
+
+    res_pol = fitters.fit_gas_profiles(
+        cutout_go,
+        profs_hy,
+        which_P="tot",
+        fit_fnt=False,
+        return_history=True,
+        n_steps=5_000,
+    )
+    assert res_pol.bl < 1.0, f"Large loss value: {res_pol.bl:.2e}"
