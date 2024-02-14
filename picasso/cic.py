@@ -100,14 +100,20 @@ def cic_3d_nojax(
     n_parts = positions.shape[0]
     center = np.array(center)[np.newaxis, :]
     box_size = box_size * np.ones(3, dtype=np.float32)[np.newaxis, :]
-
-    # Normalize positions between 0 and 1
-    positions = (positions - center) / box_size + 0.5
-    grid = np.zeros((n_cells, n_cells, n_cells), dtype=np.float32)
     if weights is None:
         weights = np.ones(n_parts)
 
-    for i_p in range(n_parts):
+    # Normalize positions between 0 and 1
+    positions = (positions - center) / box_size + 0.5
+
+    # Remove particles outside the box
+    in_box = np.all((positions > 0) & (positions < 1), axis=1)
+    positions = positions[in_box, :]
+    weights = weights[in_box]
+
+    grid = np.zeros((n_cells, n_cells, n_cells), dtype=np.float32)
+
+    for i_p in range(in_box.sum()):
         w = weights[i_p]
         xyz = positions[i_p, :] * n_cells - 0.5  # 3d position in cell space
         i = np.floor(xyz).astype(np.int16)  # position indices of cell

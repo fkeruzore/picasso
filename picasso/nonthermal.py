@@ -58,6 +58,6 @@ def f_nt_generic(r_R500: Array, a: float, b: float, c: float) -> Array:
     -----
     The model is computed as:
 
-    .. math:: f_{nt} = a + (b-a) \left(\frac{r}{2R_{500c}}\right)^c
+    .. math:: f_{nt} = a + (b-a) \\left(\\frac{r}{2R_{500c}}\\right)^c
     """
     return a + (b - a) * ((r_R500 / 2) ** c)
