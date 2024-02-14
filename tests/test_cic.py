@@ -1,14 +1,14 @@
 import numpy as np
 import scipy.stats as ss
-from halotools.empirical_models import NFWPhaseSpace
+from scipy.interpolate import interp1d
 from astropy.cosmology import FlatLambdaCDM
-from picasso import cic
+from picasso import cic, utils
 import pytest
 
 
 @pytest.mark.parametrize("which", ["gaussian", "nfw"])
 def test_cic(which):
-    np.random.seed(1811)
+    np.random.seed(1118)
     n_parts = int(1e5)
     center = np.zeros(3)
 
@@ -23,29 +23,42 @@ def test_cic(which):
 
     # Randomly sample NFW profile and deposit using CIC
     elif which == "nfw":
-        M_vir = 1e15  # h-1 Msun
-        c_vir = 10.0
+        M500c = 1e15  # h-1 Msun
+        c500c = 10.0
         z = 0
         cosmo = FlatLambdaCDM(70.0, 0.3)
 
-        np.random.seed(1811)
-        nfw = NFWPhaseSpace(cosmology=cosmo, redshift=z, mdef="vir")
-        R_vir = nfw.halo_mass_to_halo_radius(M_vir)  # h-1 Mpc
-        m_part = M_vir / n_parts  # h-1 Msun
+        nfw = utils.NFW(M500c / 0.7, c500c, "500c", z, cosmo)
+        R500c = nfw.RDelta
+        m_part = M500c / n_parts  # h-1 Msun
 
-        p = nfw.mc_generate_nfw_phase_space_points(
-            Ngals=int(n_parts), conc=c_vir, mass=M_vir
-        )
-        parts = {c: np.array(p[c]) for c in p.colnames}
+        # theta, phi
+        theta = 2 * np.pi * np.random.uniform(0, 1, n_parts)
+        phi = np.arccos(2 * np.random.uniform(0, 1, n_parts) - 1)
 
-        parts["mass"] = m_part * np.ones(n_parts)
+        # r via inverse-cdf sampling
+        _r = np.linspace(0, 2 * R500c, 100_000)
+        _cdf = nfw.enclosed_mass(_r)
+        _cdf /= _cdf.max()
+        interp = interp1d(_cdf, _r)
 
-        xyz = np.array([parts[_] for _ in "xyz"]).T
-        box_size = 3.0 * R_vir
-        n_cells = 71
+        cdf = np.random.uniform(0, 1, n_parts)
+        r = interp(cdf)
+
+        # x, y, z
+        xyz = np.array(
+            [
+                r * np.sin(phi) * np.cos(theta),
+                r * np.sin(phi) * np.sin(theta),
+                r * np.cos(phi),
+            ]
+        ).T
+
+        box_size = 5.0 * R500c
+        n_cells = 101
         cell_size = box_size / n_cells
         m_grid_cic = cic.cic_3d_nojax(
-            xyz, center, box_size, n_cells, weights=parts["mass"]
+            xyz, center, box_size, n_cells, weights=m_part * np.ones(n_parts)
         )
 
     cell_size = box_size / n_cells
@@ -65,7 +78,7 @@ def test_cic(which):
         ).pdf(xyz_grid.T.reshape(-1, 3)).reshape(n_cells, n_cells, n_cells)
     elif which == "nfw":
         r_grid = np.sqrt(np.sum(xyz_grid**2, axis=0))
-        rho_grid_pred = nfw.mass_density(r_grid, M_vir, c_vir)
+        rho_grid_pred = nfw.density(r_grid)
 
     rel_diff = (rho_grid_cic / rho_grid_pred) - 1.0
     rel_diff_ok = rel_diff[m_grid_cic > (10 * m_part)]
