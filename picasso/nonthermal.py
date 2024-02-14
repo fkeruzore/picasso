@@ -25,9 +25,9 @@ def f_nt_shaw10(
     array-like
         Non-thermal pressure fraction for each radius
     """
-    f_max = 1.0 / (alpha_0 * (4.0**n_nt))
+    f_max = 1 / (alpha_0 * (4**n_nt))
     alpha = alpha_0 * jnp.min(
-        [(1.0 + z) ** beta, f_max * jnp.tanh(beta * z) + 1.0]
+        [(1 + z) ** beta, f_max * jnp.tanh(beta * z) + 1]
     )
     return alpha * (r_R500**n_nt)
 
@@ -60,4 +60,4 @@ def f_nt_generic(r_R500: Array, a: float, b: float, c: float) -> Array:
 
     .. math:: f_{nt} = a + (b-a) \left(\frac{r}{2R_{500c}}\right)^c
     """
-    return a + (b - a) * ((r_R500 / 2.0) ** c)
+    return a + (b - a) * ((r_R500 / 2) ** c)
