@@ -32,6 +32,39 @@ def f_nt_shaw10(
     return alpha * (r_R500**n_nt)
 
 
+def f_nt_nelson14(r_R500: Array, A: float, B: float, C: float) -> Array:
+    """
+    Non-thermal pressure fraction computed from an adapted version of
+    the Nelson+14 model (see Notes)
+
+    Parameters
+    ----------
+    r_R500 : array-like
+        Radii normalized to R500c
+    A : float
+    B : float
+    C : float
+
+    Returns
+    -------
+    array-like
+        Non-thermal pressure fraction for each radius
+
+    Notes
+    -----
+    The model is computed as:
+
+    .. math:: f_{nt} = 1 - A \\times \\left\{ 1 + \\exp \\left[
+        -\\left( \\frac{r}{B \\times R_{500c}} \\right)^{C} \\right]
+        \\right\}.
+
+    This is a modified version of the original model (see eq. 7 in
+    Nelson+14), where the radius is expressed in units of R500c instead
+    of R200m (which means we expect B to be higher by a factor of ~2.5).
+    """
+    return 1 - A * (1 + jnp.exp(-((r_R500 / B) ** C)))
+
+
 def f_nt_generic(r_R500: Array, a: float, b: float, c: float) -> Array:
     """
     Generic expression for non-thermal pressure fraction: a power law
