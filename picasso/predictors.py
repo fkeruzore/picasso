@@ -65,6 +65,16 @@ class FlaxRegMLP(nn.Module):
         return x
 
 
+def _gas_par2gas_props(gas_par, phi_tot, r_R500):
+    rho_g, P_tot = polytrop.rho_P_g(phi_tot, *gas_par[:4])
+    f_nth = nonthermal.f_nt_nelson14(r_R500, *gas_par[4:])
+    P_th = P_tot * (1 - f_nth)
+    return jnp.array([rho_g, P_th, f_nth])
+
+
+_gas_par2gas_props_v = jax.vmap(_gas_par2gas_props, out_axes=1)
+
+
 class PicassoPredictor:
     def __init__(
         self,
@@ -133,9 +143,11 @@ class PicassoPredictor:
                 The predicted non-thermal pressure fraction.
         """
         gas_par = self.predict_model_parameters(x)
-        rho_g, P_tot = polytrop.rho_P_g(phi, *gas_par[:4])
-        f_nth = nonthermal.f_nt_nelson14(r_R500, *gas_par[4:])
-        return (rho_g, P_tot * (1 - f_nth), f_nth)
+        if len(gas_par.shape) == 1:
+            rho_g, P_th, f_nth = _gas_par2gas_props(gas_par, phi, r_R500)
+        else:
+            rho_g, P_th, f_nth = _gas_par2gas_props_v(gas_par, phi, r_R500)
+        return (rho_g, P_th, f_nth)
 
 
 def draw_mlp(mlp: FlaxRegMLP, colors=["k", "w"], alpha_line=1.0):
