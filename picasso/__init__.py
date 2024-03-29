@@ -9,6 +9,15 @@ __all__ = [
     "polytrop_ostriker",
     "utils",
     "data_helpers",
+    "predictors",
 ]
 
-from . import cic, nonthermal, polytrop, polytrop_ostriker, utils, data_helpers
+from . import (
+    cic,
+    nonthermal,
+    polytrop,
+    polytrop_ostriker,
+    utils,
+    predictors,
+    data_helpers,
+)
