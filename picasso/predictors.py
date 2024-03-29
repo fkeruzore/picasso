@@ -2,9 +2,12 @@ import jax
 import jax.numpy as jnp
 import flax.linen as nn
 import jax.scipy.stats as jss
+import pickle
+import os
 
 from jax import Array
 from typing import Sequence, Callable, Iterable
+from functools import partial
 
 from . import polytrop, nonthermal
 
@@ -200,3 +203,26 @@ def draw_mlp(mlp: FlaxRegMLP, colors=["k", "w"], alpha_line=1.0):
     ax.set_yticks([])
     fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
     return fig, ax
+
+
+_here = os.path.dirname(os.path.abspath(__file__))
+
+with open(f"{_here}/trained_networks/net12.pkl", "rb") as f:
+    _params_net12 = pickle.load(f)
+
+Net12 = PicassoPredictor(
+    FlaxRegMLP(
+        _params_net12["X_DIM"],
+        _params_net12["Y_DIM"],
+        _params_net12["hidden_features"],
+        _params_net12["activations"],
+        _params_net12["extra_args_output_activation"],
+    ),
+    _params_net12["net_par"],
+    transfom_x=partial(
+        transform_minmax,
+        mins=_params_net12["minmax_x"][0],
+        maxs=_params_net12["minmax_x"][1],
+    ),
+    transfom_y=transform_y,
+)
