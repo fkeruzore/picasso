@@ -230,4 +230,6 @@ def load_trained_net(pkl_file: str):
     )
 
 
-Net12 = load_trained_net("net12.pkl")
+net12 = load_trained_net("net12.pkl")
+
+net1 = load_trained_net("net1.pkl")
