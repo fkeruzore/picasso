@@ -207,22 +207,27 @@ def draw_mlp(mlp: FlaxRegMLP, colors=["k", "w"], alpha_line=1.0):
 
 _here = os.path.dirname(os.path.abspath(__file__))
 
-with open(f"{_here}/trained_networks/net12.pkl", "rb") as f:
-    _params_net12 = pickle.load(f)
 
-Net12 = PicassoPredictor(
-    FlaxRegMLP(
-        _params_net12["X_DIM"],
-        _params_net12["Y_DIM"],
-        _params_net12["hidden_features"],
-        _params_net12["activations"],
-        _params_net12["extra_args_output_activation"],
-    ),
-    _params_net12["net_par"],
-    transfom_x=partial(
-        transform_minmax,
-        mins=_params_net12["minmax_x"][0],
-        maxs=_params_net12["minmax_x"][1],
-    ),
-    transfom_y=transform_y,
-)
+def load_trained_net(pkl_file: str):
+    with open(f"{_here}/trained_networks/{pkl_file}", "rb") as f:
+        _params = pickle.load(f)
+
+    return PicassoPredictor(
+        FlaxRegMLP(
+            _params["X_DIM"],
+            _params["Y_DIM"],
+            _params["hidden_features"],
+            _params["activations"],
+            _params["extra_args_output_activation"],
+        ),
+        _params["net_par"],
+        transfom_x=partial(
+            transform_minmax,
+            mins=_params["minmax_x"][0],
+            maxs=_params["minmax_x"][1],
+        ),
+        transfom_y=transform_y,
+    )
+
+
+Net12 = load_trained_net("net12.pkl")
