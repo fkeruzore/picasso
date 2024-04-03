@@ -33,6 +33,7 @@ optional = true
 
 [tool.poetry.group.tests.dependencies]
 pytest = "^7.4.2"
+pytest-benchmark = "^4.0.0"
 
 [tool.poetry.group.dev]
 optional = true
