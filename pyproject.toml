@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "picasso"
-version = "0.2.3"
+version = "0.2.4"
 description = ""
 authors = ["Florian Keruzore <fkeruzore@anl.gov>"]
 readme = "README.md"
@@ -26,6 +26,7 @@ optional = true
 jax = "^0.4.11"
 jaxlib = "^0.4.10"
 optax = "^0.1.7"
+flax = "^0.8.2"
 
 [tool.poetry.group.tests]
 optional = true

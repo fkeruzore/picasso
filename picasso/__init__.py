@@ -1,6 +1,6 @@
 __author__ = "Florian Kéruzoré"
 __email__ = "fkeruzore@anl.gov"
-__version__ = "0.2.3"
+__version__ = "0.2.4"
 
 __all__ = [
     "cic",
