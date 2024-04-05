@@ -82,11 +82,11 @@ def test_picasso_predictor():
     assert gas_model[2].shape == (n_halos, n_pts)
 
 
-@pytest.mark.parametrize("jit", [True, False])
+@pytest.mark.parametrize("jit", ["jit", "nojit"])
 def test_predict_model_params_pretrained(jit, benchmark):
 
     predict_func = predictors.net1.predict_model_parameters
-    if jit:  # jit the function and call it once to compile
+    if jit == "jit":  # jit the function and call it once to compile
         predict_func = jax.jit(predict_func)
         _ = predict_func(data_predictor["x"][0])
 
@@ -96,10 +96,10 @@ def test_predict_model_params_pretrained(jit, benchmark):
     assert jnp.all(jnp.isfinite(y_pred))
 
 
-@pytest.mark.parametrize("jit", [True, False])
+@pytest.mark.parametrize("jit", ["jit", "nojit"])
 def test_predict_gas_properties_pretrained(jit, benchmark):
     predict_func = predictors.net1.predict_gas_model
-    if jit:  # jit the function and call it once to compile
+    if jit == "jit":  # jit the function and call it once to compile
         predict_func = jax.jit(predict_func)
         _ = predict_func(
             data_predictor["x"][0],

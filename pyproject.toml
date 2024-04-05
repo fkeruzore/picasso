@@ -48,7 +48,7 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
-addopts = "--benchmark-disable -ra -q"
+addopts = "--benchmark-disable -ra -q --benchmark-group-by=func"
 testpaths = [
     "tests",
 ]
