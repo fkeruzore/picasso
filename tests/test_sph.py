@@ -8,7 +8,7 @@ from picasso.utils import sph
 
 @pytest.mark.parametrize("kernel", ["cubic_spline", "wendland"])
 def test_kernel_integral(kernel):
-    w = sph.sph_kernels[kernel](x := jnp.linspace(0.0, 1.05, 10_000), 1.0)
+    w = sph.sph_kernels[kernel](x := jnp.linspace(0.0, 1.55, 10_000), 1.5)
     integ = 4 * jnp.pi * trapezoid(w * x**2, x)
     assert jnp.isclose(
         integ, 1.0, rtol=1e-3
