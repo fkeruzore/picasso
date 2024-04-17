@@ -31,40 +31,41 @@ sph_kernels = {
 
 
 @partial(jax.jit, static_argnums=(2,))
-def _n_nearest_dists_indices_bruteforce_i(xyz_i, xyz_j, n):
+def _n_nearest_dists_indices_bruteforce_1(xyz_i, xyz_j, n):
     dists = jnp.sqrt(jnp.sum((xyz_j - xyz_i) ** 2, axis=1))
     dists_best_n, i_best_n = jax.lax.top_k(-dists, n)
     return -dists_best_n, i_best_n
 
 
-def n_nearest_dists_indices_bruteforce(xyz, n):
+def n_nearest_dists_indices_bruteforce(xyz_i, xyz_j, n):
     return jax.vmap(
-        _n_nearest_dists_indices_bruteforce_i, in_axes=(0, None, None)
-    )(xyz, xyz, n)
+        _n_nearest_dists_indices_bruteforce_1, in_axes=(0, None, None)
+    )(xyz_i, xyz_j, n)
 
 
-def n_nearest_dists_indices_kdtree(xyz, n):
-    tree = KDTree(xyz)
-    dists_best_n, i_best_n = tree.query(xyz, k=n)
+def n_nearest_dists_indices_kdtree(xyz_i, xyz_j, n):
+    tree = KDTree(xyz_j)
+    dists_best_n, i_best_n = tree.query(xyz_i, k=n)
     return jnp.array(dists_best_n), jnp.array(i_best_n)
 
 
-nnd_funcs = {
+_nnd_funcs = {
     "bruteforce": n_nearest_dists_indices_bruteforce,
     "kdtree": n_nearest_dists_indices_kdtree,
 }
 
 
 def sph_radii_volumes(
-    xyz: Array,
+    xyz_i: Array,
+    xyz_j: Array,
     n: int = 32,
     kernel: str = "wendland",
     kind: str = "kdtree",
     return_dists_and_indices: bool = False,
 ):
     sph_kernel = sph_kernels[kernel]
-    nnd_func = nnd_funcs[kind]
-    r_ij, j = nnd_func(xyz, n)
+    nnd_func = _nnd_funcs[kind]
+    r_ij, j = nnd_func(xyz_i, xyz_j, n)
     h = r_ij[:, -1]
     V = 1 / jnp.sum(sph_kernel(r_ij, r_ij[:, -1, None]), axis=1)
 
