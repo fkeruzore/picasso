@@ -1,7 +1,7 @@
 import numpy as np
 import jax.numpy as jnp
 import optax
-from picasso.utils import optimize
+from picasso.utils.fitting import optimize
 import pytest
 
 
