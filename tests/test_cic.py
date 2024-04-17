@@ -2,7 +2,7 @@ import numpy as np
 import scipy.stats as ss
 from scipy.interpolate import interp1d
 from astropy.cosmology import FlatLambdaCDM
-from picasso import cic, utils
+from picasso.utils import cic, nfw
 import pytest
 
 
@@ -28,8 +28,8 @@ def test_cic(which):
         z = 0
         cosmo = FlatLambdaCDM(70.0, 0.3)
 
-        nfw = utils.NFW(M500c / 0.7, c500c, "500c", z, cosmo)
-        R500c = nfw.RDelta
+        halo = nfw.NFW(M500c / 0.7, c500c, "500c", z, cosmo)
+        R500c = halo.RDelta
         m_part = M500c / n_parts  # h-1 Msun
 
         # theta, phi
@@ -38,7 +38,7 @@ def test_cic(which):
 
         # r via inverse-cdf sampling
         _r = np.linspace(0, 2 * R500c, 100_000)
-        _cdf = nfw.enclosed_mass(_r)
+        _cdf = halo.enclosed_mass(_r)
         _cdf /= _cdf.max()
         interp = interp1d(_cdf, _r)
 
@@ -78,7 +78,7 @@ def test_cic(which):
         ).pdf(xyz_grid.T.reshape(-1, 3)).reshape(n_cells, n_cells, n_cells)
     elif which == "nfw":
         r_grid = np.sqrt(np.sum(xyz_grid**2, axis=0))
-        rho_grid_pred = nfw.density(r_grid)
+        rho_grid_pred = halo.density(r_grid)
 
     rel_diff = (rho_grid_cic / rho_grid_pred) - 1.0
     rel_diff_ok = rel_diff[m_grid_cic > (10 * m_part)]

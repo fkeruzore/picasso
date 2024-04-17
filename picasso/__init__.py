@@ -3,7 +3,6 @@ __email__ = "fkeruzore@anl.gov"
 __version__ = "0.2.4"
 
 __all__ = [
-    "cic",
     "nonthermal",
     "polytrop",
     "polytrop_ostriker",
@@ -13,7 +12,6 @@ __all__ = [
 ]
 
 from . import (
-    cic,
     nonthermal,
     polytrop,
     polytrop_ostriker,
