@@ -7,10 +7,10 @@ from jax import Array
 
 
 def _sph_kernel_cubic_spline(x, h):
-    q = x / (h / 2)
-    W = jnp.where((q <= 1), 1 - 1.5 * q**2 + 0.75 * q**3, 0.0)
-    W = jnp.where((q > 1) & (q < 2), 0.25 * (2 - q) ** 3, W)
-    return W * 1 / (jnp.pi * h**3)
+    q = x / h
+    W = jnp.where((q <= 0.5), 1 - (6 * q**2) * (1 - q), 0)
+    W = jnp.where((q > 0.5) & (q <= 1), 2 * (1 - q) ** 3, W)
+    return W * 8 / (jnp.pi * h**3)
 
 
 def _sph_kernel_wendland(x, h):
