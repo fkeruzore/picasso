@@ -1,6 +1,6 @@
 import jax.numpy as jnp
 import optax
-from typing import Union
+from typing import Union, Tuple
 from .hacc import HACCCutout, HACCSODProfiles
 from .. import utils, polytrop, nonthermal
 
@@ -14,7 +14,7 @@ def fit_gas_profiles(
     backup_optimizer: optax.GradientTransformation = optax.adam(1e-3),
     return_history: bool = False,
     n_steps: int = 10_000,
-) -> (utils.FitResults, Union[utils.FitResults, None]):
+) -> Tuple[utils.fitting.FitResults, Union[utils.fitting.FitResults, None]]:
     """
     Fit the polytropic gas model on a pair of halo matches, i.e. finds
     the best set of model parameters to infer the gas properties of a
@@ -49,9 +49,9 @@ def fit_gas_profiles(
 
     Returns
     -------
-    picasso.utils.FitResults
+    picasso.utils.fitting.FitResults
         Polytropic fit results
-    picasso.utils.FitResults or None
+    picasso.utils.fitting.FitResults or None
         Non-thermal fraction fit results
     """
 
@@ -102,7 +102,7 @@ def fit_gas_profiles(
         [jnp.log10(rho_0), jnp.log10(P_0), 1.2, jnp.log10(rho_0 / P_0 / 3)]
     )
 
-    res_pol = utils.optimize(
+    res_pol = utils.fitting.optimize(
         loss_fn_pol,
         par_i,
         bounds=[(None, None), (None, None), (1.0, 2.0), (None, None)],
@@ -134,7 +134,7 @@ def fit_gas_profiles(
 
     par_i = jnp.array([-1.0, -0.5, 0.75])
 
-    res_fnt = utils.optimize(
+    res_fnt = utils.fitting.optimize(
         loss_fn_fnt,
         par_i,
         bounds=[(None, 0.0), (None, 0.0), (0.0, None)],
@@ -157,7 +157,7 @@ def fit_gas_profiles_phi_prof(
     backup_optimizer: optax.GradientTransformation = optax.adam(1e-3),
     return_history: bool = False,
     n_steps: int = 10_000,
-) -> (utils.FitResults, Union[utils.FitResults, None]):
+) -> Tuple[utils.fitting.FitResults, Union[utils.fitting.FitResults, None]]:
     """
     Fit the polytropic gas model on a pair of halo matches, i.e. finds
     the best set of model parameters to infer the gas properties of a
@@ -192,9 +192,9 @@ def fit_gas_profiles_phi_prof(
 
     Returns
     -------
-    picasso.utils.FitResults
+    picasso.utils.fitting.FitResults
         Polytropic fit results
-    picasso.utils.FitResults or None
+    picasso.utils.fitting.FitResults or None
         Non-thermal fraction fit results
     """
 
@@ -238,7 +238,7 @@ def fit_gas_profiles_phi_prof(
         [jnp.log10(rho_0), jnp.log10(P_0), 1.2, jnp.log10(rho_0 / P_0 / 3)]
     )
 
-    res_pol = utils.optimize(
+    res_pol = utils.fitting.optimize(
         loss_fn_pol,
         par_i,
         bounds=[(None, None), (None, None), (1.0, 2.0), (None, None)],
@@ -269,7 +269,7 @@ def fit_gas_profiles_phi_prof(
 
     par_i = jnp.array([-1.0, -0.5, 0.75])
 
-    res_fnt = utils.optimize(
+    res_fnt = utils.fitting.optimize(
         loss_fn_fnt,
         par_i,
         bounds=[(None, 0.0), (None, 0.0), (0.0, None)],
