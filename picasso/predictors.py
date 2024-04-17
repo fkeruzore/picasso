@@ -23,6 +23,8 @@ def soft_clip(x, a, b, c=1.0):
 possible_activations = {
     "selu": nn.selu,
     "relu": nn.relu,
+    "tanh": nn.tanh,
+    "sigmoid": nn.sigmoid,
     "clip": jnp.clip,
     "soft_clip": soft_clip,
     "linear": lambda x: x,
@@ -31,6 +33,10 @@ possible_activations = {
 
 def transform_minmax(x: Array, mins: Array, maxs: Array):
     return (x - mins) / (maxs - mins)
+
+
+def inv_transform_minmax(x: Array, mins: Array, maxs: Array):
+    return x * (maxs - mins) + mins
 
 
 def transform_y(y: Array):
