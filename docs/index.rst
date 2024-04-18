@@ -3,13 +3,22 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to picasso's documentation!
-===================================
+picasso
+=======
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Contents
 
+.. toctree::
+   :hidden:
+   :caption: 📖 Reference
+   :maxdepth: 2
+
+   api/predictors
+   api/polytrop
+   api/nonthermal
+   api/utils
 
 
 Indices and tables
