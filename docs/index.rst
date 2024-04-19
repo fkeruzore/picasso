@@ -7,13 +7,14 @@ picasso
 =======
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents
 
+   notebooks/plot_model_params.ipynb
+
 .. toctree::
-   :hidden:
    :caption: 📖 Reference
-   :maxdepth: 2
+   :maxdepth: 1
 
    api/predictors
    api/polytrop
