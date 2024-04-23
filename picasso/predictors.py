@@ -91,17 +91,33 @@ class PicassoPredictor:
         net_par: dict,
         transfom_x: Callable = lambda x: x,
         transfom_y: Callable = lambda y: y,
+        fix_params: dict = {},
     ):
         self.mlp = mlp
         self._transfom_x = transfom_x
         self._transfom_y = transfom_y
         self.net_par = net_par
+        self.fix_params = {}
+        for k, v in fix_params.items():
+            i = {
+                "rho0": 0,
+                "P0": 1,
+                "Gamma": 2,
+                "theta0": 3,
+                "Ant": 4,
+                "Bnt": 5,
+                "Cnt": 6,
+            }[k]
+            self.fix_params[i] = jnp.array(v)
 
     def transfom_x(self, x: Array) -> Array:
         return self._transfom_x(x)
 
     def transfom_y(self, y: Array) -> Array:
-        return self._transfom_y(y)
+        y_out = self._transfom_y(y)
+        for k, v in self.fix_params.items():
+            y_out = jnp.insert(y_out, k, v, axis=-1)
+        return y_out
 
     def predict_model_parameters(self, x: Array) -> Array:
         """
