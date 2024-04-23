@@ -88,7 +88,6 @@ class PicassoPredictor:
     def __init__(
         self,
         mlp: FlaxRegMLP,
-        net_par: dict,
         transfom_x: Callable = lambda x: x,
         transfom_y: Callable = lambda y: y,
         fix_params: dict = {},
@@ -96,7 +95,6 @@ class PicassoPredictor:
         self.mlp = mlp
         self._transfom_x = transfom_x
         self._transfom_y = transfom_y
-        self.net_par = net_par
         self.fix_params = {}
         for k, v in fix_params.items():
             i = {
@@ -119,7 +117,7 @@ class PicassoPredictor:
             y_out = jnp.insert(y_out, k, v, axis=-1)
         return y_out
 
-    def predict_model_parameters(self, x: Array) -> Array:
+    def predict_model_parameters(self, x: Array, net_par: dict) -> Array:
         """
         Predicts the gas model parameters based on halo properties.
 
@@ -135,11 +133,11 @@ class PicassoPredictor:
         """
 
         x_ = self.transfom_x(x)
-        y_ = self.mlp.apply(self.net_par, x_)
+        y_ = self.mlp.apply(net_par, x_)
         return self.transfom_y(y_)
 
     def predict_gas_model(
-        self, x: Array, phi: Array, r_R500: Array
+        self, x: Array, phi: Array, r_R500: Array, net_par: dict
     ) -> Sequence[Array]:
         """
         Predicts the gas properties from halo properties ant potential
@@ -173,6 +171,27 @@ class PicassoPredictor:
         else:
             rho_g, P_th, f_nth = _gas_par2gas_props_v(gas_par, phi, r_R500)
         return (rho_g, P_th, f_nth)
+
+
+class PicassoTrainedPredictor(PicassoPredictor):
+    def __init__(
+        self,
+        mlp: FlaxRegMLP,
+        net_par: dict,
+        transfom_x: Callable = lambda x: x,
+        transfom_y: Callable = lambda y: y,
+        fix_params: dict = {},
+    ):
+        super().__init__(mlp, transfom_x, transfom_y, fix_params)
+        self.net_par = net_par
+
+    def predict_gas_model(
+        self, x: Array, phi: Array, r_R500: Array
+    ) -> Sequence[Array]:
+        return super().predict_gas_model(x, phi, r_R500, self.net_par)
+
+    def predict_model_parameters(self, x: Array) -> Array:
+        return super().predict_model_parameters(x, self.net_par)
 
 
 def draw_mlp(mlp: FlaxRegMLP, colors=["k", "w"], alpha_line=1.0):
@@ -234,7 +253,7 @@ def load_trained_net(pkl_file: str):
     with open(f"{_here}/trained_networks/{pkl_file}", "rb") as f:
         _params = pickle.load(f)
 
-    return PicassoPredictor(
+    return PicassoTrainedPredictor(
         FlaxRegMLP(
             _params["X_DIM"],
             _params["Y_DIM"],

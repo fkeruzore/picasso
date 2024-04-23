@@ -66,7 +66,7 @@ def test_picasso_predictor():
     default_net_par = mlp.init(rng, x[0])
 
     # Create an instance of PicassoPredictor
-    predictor = predictors.PicassoPredictor(mlp, default_net_par)
+    predictor = predictors.PicassoTrainedPredictor(mlp, default_net_par)
 
     # Test predict_model_parameters method
     y_pred = predictor.predict_model_parameters(x)
