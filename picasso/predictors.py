@@ -165,7 +165,7 @@ class PicassoPredictor:
             - f_nth : Array
                 The predicted non-thermal pressure fraction.
         """
-        gas_par = self.predict_model_parameters(x)
+        gas_par = self.predict_model_parameters(x, net_par)
         if len(gas_par.shape) == 1:
             rho_g, P_th, f_nth = _gas_par2gas_props(gas_par, phi, r_R500)
         else:
