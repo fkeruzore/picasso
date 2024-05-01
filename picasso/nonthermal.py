@@ -42,8 +42,11 @@ def f_nt_nelson14(r_R500: Array, A: float, B: float, C: float) -> Array:
     r_R500 : array-like
         Radii normalized to R500c
     A : float
+        :math:`A` parameter values
     B : float
+        :math:`B` parameter values
     C : float
+        :math:`C` parameter values
 
     Returns
     -------
@@ -54,9 +57,9 @@ def f_nt_nelson14(r_R500: Array, A: float, B: float, C: float) -> Array:
     -----
     The model is computed as:
 
-    .. math:: f_{nt} = 1 - A \\times \\left\{ 1 + \\exp \\left[
+    .. math:: f_{nt} = 1 - A \\times \\left\\{ 1 + \\exp \\left[
         -\\left( \\frac{r}{B \\times R_{500c}} \\right)^{C} \\right]
-        \\right\}.
+        \\right\\}.
 
     This is a modified version of the original model (see eq. 7 in
     Nelson+14), where the radius is expressed in units of R500c instead
