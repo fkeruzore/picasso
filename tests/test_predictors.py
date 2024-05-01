@@ -66,7 +66,7 @@ def test_picasso_predictor():
     default_net_par = mlp.init(rng, x[0])
 
     # Create an instance of PicassoPredictor
-    predictor = predictors.PicassoPredictor(mlp, default_net_par)
+    predictor = predictors.PicassoTrainedPredictor(mlp, default_net_par)
 
     # Test predict_model_parameters method
     y_pred = predictor.predict_model_parameters(x)
@@ -76,7 +76,7 @@ def test_picasso_predictor():
     phi = jnp.ones((n_halos, n_pts))
     r_R500 = jnp.ones((n_halos, n_pts))
     gas_model = predictor.predict_gas_model(x, phi, r_R500)
-    assert len(gas_model) == 3
+    assert len(gas_model) == 4
     assert gas_model[0].shape == (n_halos, n_pts)
     assert gas_model[1].shape == (n_halos, n_pts)
     assert gas_model[2].shape == (n_halos, n_pts)
@@ -116,7 +116,7 @@ def test_predict_gas_properties_pretrained(jit, benchmark):
     )
     profs_pred = jnp.array(profs_pred)
     assert profs_pred.shape == (
-        3,
+        4,
         data_predictor["x"].shape[0],
         data_predictor["phi"].shape[1],
     )
