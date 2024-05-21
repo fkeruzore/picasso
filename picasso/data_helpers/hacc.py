@@ -188,11 +188,8 @@ class HACCSODProfiles(HACCDataset):
         else:
             rho_g, P_th, P_nt = None, None, None
 
-        # Units: rho is h2 Msun cMpc-3, P is h2 keV ccm-3
-        # -> P conversion needed
-        if is_hydro:
-            P_th *= units_P_obs2sim
-            P_nt *= units_P_obs2sim
+        # Units: rho is h2 Msun cMpc-3, P is h2 keV cm-3
+        # -> no conversion needed
 
         # Cut radii
         r_ok = (r_edges[:-1] >= r_min) & (r_edges[1:] <= r_max)
@@ -234,8 +231,9 @@ class HACCSODProfiles(HACCDataset):
         )
         shell_vols = 4.0 * np.pi * (r_edges[1:] ** 3 - r_edges[:-1] ** 3) / 3.0
         rho_tot = m_tot / shell_vols
+        drho_tot = jnp.sqrt(m_tot) / shell_vols
 
-        _, phi_tot, _ = utils.azimuthal_profile(
+        _, phi_tot, dphi_tot = utils.azimuthal_profile(
             cutout.parts["phi"],
             cutout.parts["r"],
             r_edges,
@@ -251,27 +249,55 @@ class HACCSODProfiles(HACCDataset):
                 stats=(jnp.nansum, jnp.nanstd),
             )
             rho_g = m_g / shell_vols
+            drho_g = jnp.sqrt(m_g) / shell_vols
 
             # Gas thermal pressure
-            _, kbT_g, _ = utils.azimuthal_profile(
+            _, kbT_g, dkbT_g = utils.azimuthal_profile(
                 cutout.a * 2.0 * cutout.gas_parts["uu"] / 3.0,
                 cutout.gas_parts["r"],
                 r_edges,
+                stats=(jnp.nanmean, jnp.nanstd),
             )
-            P_th = rho_g * kbT_g
+            P_th = rho_g * kbT_g * units_P_sim2obs
+            dP_th = (
+                jnp.sqrt(
+                    (drho_g * kbT_g / 1e20) ** 2 + (rho_g * dkbT_g / 1e20) ** 2
+                )
+                * 1e20
+                * units_P_sim2obs
+            )
 
             # Gas non-thermal pressure
-            _, v2_g, _ = utils.azimuthal_profile(
+            _, v2_g, dv2_g = utils.azimuthal_profile(
                 cutout.gas_parts["v2_proper"] / cutout.a,
                 cutout.gas_parts["r"],
                 r_edges,
+                stats=(jnp.nanmean, jnp.nanstd),
             )
-            P_nt = rho_g * v2_g / 3.0
+            P_nt = rho_g * v2_g / 3.0 * units_P_sim2obs
+            dP_nt = (
+                jnp.sqrt(
+                    (drho_g * v2_g / 1e20) ** 2 + (rho_g * dv2_g / 1e20) ** 2
+                )
+                / 3.0
+                * 1e20
+                * units_P_sim2obs
+            )
+
+            P_tot = P_th + P_nt
+            dP_tot = jnp.sqrt(dP_th**2 + dP_nt**2)
+
+            f_nt = P_nt / P_tot
+            df_nt = jnp.sqrt((P_th * dP_nt) ** 2 + (P_nt * dP_th) ** 2) / (
+                P_tot**2
+            )
+
+            # Units: rho is h2 Msun cMpc-3, P is (now) h2 keV cm-3
+            # -> no conversion needed
+
         else:
             rho_g, P_th, P_nt = None, None, None
-
-        # Units: rho is h2 Msun cMpc-3, P is h2 keV ccm-3
-        # -> no conversion needed
+            drho_g, dP_th, dP_nt = None, None, None
 
         inst = cls(
             r_edges,
@@ -285,6 +311,15 @@ class HACCSODProfiles(HACCDataset):
             P_nt=P_nt,
             is_hydro=cutout.is_hydro,
         )
+        inst.drho_tot = drho_tot
+        inst.dphi_tot = dphi_tot
+        if cutout.is_hydro:
+            inst.drho_g = drho_g
+            inst.dP_th = dP_th
+            inst.dP_nt = dP_nt
+            inst.dP_tot = dP_tot
+            inst.f_nt = f_nt
+            inst.df_nt = df_nt
 
         return inst
 
