@@ -1,4 +1,5 @@
 import numpy as np
+import jax
 import jax.numpy as jnp
 from numpy.typing import NDArray
 from astropy.cosmology import Cosmology
@@ -223,40 +224,44 @@ class HACCSODProfiles(HACCDataset):
 
     @classmethod
     def from_cutout(cls, cutout: HACCCutout, r_edges: NDArray):
-        _, m_tot, _ = utils.azimuthal_profile(
+        azimuthal_profile = jax.jit(
+            utils.azimuthal_profile, static_argnames=["statistics"]
+        )
+
+        _, m_tot, n_tot = azimuthal_profile(
             cutout.parts["mass"],
             cutout.parts["r"],
             r_edges,
-            stats=(jnp.nansum, jnp.nanstd),
+            statistics=("sum", "count"),
         )
         shell_vols = 4.0 * np.pi * (r_edges[1:] ** 3 - r_edges[:-1] ** 3) / 3.0
         rho_tot = m_tot / shell_vols
-        drho_tot = jnp.sqrt(m_tot) / shell_vols
+        drho_tot = rho_tot / np.sqrt(n_tot)
 
         _, phi_tot, dphi_tot = utils.azimuthal_profile(
             cutout.parts["phi"],
             cutout.parts["r"],
             r_edges,
-            stats=(jnp.nanmean, jnp.nanstd),
+            statistics=("sum", "std"),
         )
 
         if cutout.is_hydro:
             # Gas density = gas mass in shells, divided by shell volumes
-            _, m_g, _ = utils.azimuthal_profile(
+            _, m_g, n_g = utils.azimuthal_profile(
                 cutout.gas_parts["mass"],
                 cutout.gas_parts["r"],
                 r_edges,
-                stats=(jnp.nansum, jnp.nanstd),
+                statistics=("sum", "count"),
             )
             rho_g = m_g / shell_vols
-            drho_g = jnp.sqrt(m_g) / shell_vols
+            drho_g = rho_g / np.sqrt(n_g)
 
             # Gas thermal pressure
             _, kbT_g, dkbT_g = utils.azimuthal_profile(
                 cutout.a * 2.0 * cutout.gas_parts["uu"] / 3.0,
                 cutout.gas_parts["r"],
                 r_edges,
-                stats=(jnp.nanmean, jnp.nanstd),
+                statistics=("mean", "std"),
             )
             P_th = rho_g * kbT_g * units_P_sim2obs
             dP_th = (
@@ -272,7 +277,7 @@ class HACCSODProfiles(HACCDataset):
                 cutout.gas_parts["v2_proper"] / cutout.a,
                 cutout.gas_parts["r"],
                 r_edges,
-                stats=(jnp.nanmean, jnp.nanstd),
+                statistics=("mean", "std"),
             )
             P_nt = rho_g * v2_g / 3.0 * units_P_sim2obs
             dP_nt = (
