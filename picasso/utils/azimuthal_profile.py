@@ -1,47 +1,102 @@
-from jax import jit, Array
+from jax import Array, vmap
 import jax.numpy as jnp
-from functools import partial
 from typing import Tuple
 
 
-@partial(jit, static_argnames=["stats"])
 def azimuthal_profile(
-    q: Array, r: Array, r_bins: Array, stats=(jnp.nanmean, jnp.nanstd)
-) -> Tuple[Array, Array, Array]:
-    """Azimuthal profile of `q`, evaluated at radii `r`, with radial
-    binning `r_bins`.
+    q: Array,
+    r: Array,
+    r_bin_edges: Array,
+    statistics: Tuple[str] = ("mean", "std"),
+) -> Tuple[dict, Array]:
+    """
+    Compute binned statistics for a set of data.
 
     Parameters
     ----------
-    q : array
-        Quantity of interest
-    r : array
-        Radii at which the quantity of interest is evaluated
-    r_bins : array
-        Radial bins to be used for the radial profile
-    stat : str
-        Which statistic to be used within annuli, "mean" or "median",
-        defaults to "mean"
+    q : Array
+        The values on which to compute the statistic.
+    r : Array
+        A sequence of values to be binned.
+    r_edges : Array
+        Edges of the radial bins.
+    statistics : tuple of str, optional
+        The statistics to compute (default is ['mean', 'std']).
+        The following statistics are available:
+            - 'mean' : compute the mean of values for points within
+              each bin.
+            - 'std' : compute the standard deviation of values for
+              points within each bin.
+            - 'sum' : compute the sum of values for points within
+              each bin.
+            - 'count' : compute the count of points within each bin.
 
     Returns
     -------
-    array
-        center of 1d bins, shape=(n_bins - 1)
-    array
-        mean value of q in bins, shape=(n_bins - 1)
-    array
-        standard deviation of q in bins, shape=(n_bins - 1)
+    results : dict
+        A dictionary where keys are the statistics and values are
+        arrays of the computed statistic in each bin.
+    r_bin_centers : Array
+        The centers of the bins.
     """
-    q, r = q.flatten(), r.flatten()
 
-    mean = []
-    std = []
+    # Digitize the x values to find out which bin they belong to
+    binnumber = jnp.digitize(r, r_bin_edges) - 1
 
-    for i_r in range(len(r_bins) - 1):
-        r_l, r_u = r_bins[i_r], r_bins[i_r + 1]
-        q_i = jnp.where((r >= r_l) & (r < r_u), q, jnp.nan)
-        mean.append(stats[0](q_i))
-        std.append(stats[1](q_i))
+    # Exclude values that fall outside the bin range
+    binnumber = jnp.where(
+        (binnumber >= 0) & (binnumber < len(r_bin_edges) - 1), binnumber, -1
+    )
+    bin_indices = jnp.arange(len(r_bin_edges) - 1)
 
-    r_1d = r_bins[:-1] + 0.5 * jnp.ediff1d(r_bins)
-    return r_1d, jnp.array(mean), jnp.array(std)
+    def compute_statistic_per_bin(stat, bin_index, values, binnumber):
+        bin_mask = binnumber == bin_index
+        bin_values = jnp.where(bin_mask, values, 0)
+
+        if stat == "mean":
+            bin_count = jnp.sum(bin_mask)
+            bin_sum = jnp.sum(bin_values)
+            return bin_sum / jnp.where(bin_count > 0, bin_count, 1)
+        elif stat == "sum":
+            return jnp.sum(bin_values)
+        elif stat == "count":
+            return jnp.sum(bin_mask)
+        elif stat == "std":
+            bin_count = jnp.sum(bin_mask)
+            bin_mean = jnp.sum(bin_values) / jnp.where(
+                bin_count > 0, bin_count, 1
+            )
+            bin_sq_diff = jnp.sum(
+                jnp.where(bin_mask, (values - bin_mean) ** 2, 0)
+            )
+            return jnp.sqrt(
+                bin_sq_diff / jnp.where(bin_count > 0, bin_count, 1)
+            )
+        else:
+            raise ValueError("Unsupported statistic")
+
+    # Create a function to compute all statistics for a given bin index
+    def compute_all_statistics(bin_index, values, binnumber):
+        return [
+            compute_statistic_per_bin(stat, bin_index, values, binnumber)
+            for stat in statistics
+        ]
+
+    # Use vmap to vectorize the computation over bin indices
+    compute_all = vmap(
+        lambda bin_index: compute_all_statistics(bin_index, q, binnumber)
+    )
+    all_statistics = compute_all(bin_indices)
+
+    # Organize the results in a tuple
+    results = (
+        jnp.array(
+            [
+                all_statistics[i][bin_index]
+                for bin_index in range(len(bin_indices))
+            ]
+        )
+        for i, stat in enumerate(statistics)
+    )
+
+    return 0.5 * (r_bin_edges[1:] + r_bin_edges[:-1]), *results
