@@ -242,7 +242,7 @@ class HACCSODProfiles(HACCDataset):
             cutout.parts["phi"],
             cutout.parts["r"],
             r_edges,
-            statistics=("sum", "std"),
+            statistics=("mean", "std"),
         )
 
         if cutout.is_hydro:
