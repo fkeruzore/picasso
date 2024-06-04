@@ -81,7 +81,7 @@ def f_nt_generic(r_R500: Array, a: float, b: float, c: float) -> Array:
     a : float
         Non-thermal pressure fraction in the cluster center
     b : float
-        Non-thermal pressure fraction at r=2*R500c
+        Non-thermal pressure fraction at r=R500c
     c : float
         Power law radial dependence of f_nt
 
@@ -94,6 +94,6 @@ def f_nt_generic(r_R500: Array, a: float, b: float, c: float) -> Array:
     -----
     The model is computed as:
 
-    .. math:: f_{nt} = a + (b-a) \\left(\\frac{r}{2R_{500c}}\\right)^c
+    .. math:: f_{nt} = a + (b-a) \\left(\\frac{r}{R_{500c}}\\right)^c
     """
-    return a + (b - a) * ((r_R500 / 2) ** c)
+    return a + (b - a) * (r_R500 ** c)
