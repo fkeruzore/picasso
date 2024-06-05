@@ -74,14 +74,27 @@ class FlaxRegMLP(nn.Module):
         return x
 
 
-def _gas_par2gas_props(gas_par, phi_tot, r_R500):
+def _gas_par2gas_props_broken_plaw(gas_par, phi_tot, r_R500):
+    rho_g, P_tot = polytrop.rho_P_g(phi_tot, *gas_par[:4])
+    f_nth = nonthermal.f_nt_generic(r_R500, *gas_par[4:])
+    P_th = P_tot * (1 - f_nth)
+    return jnp.array([rho_g, P_tot, P_th, f_nth])
+
+
+def _gas_par2gas_props_nelson(gas_par, phi_tot, r_R500):
     rho_g, P_tot = polytrop.rho_P_g(phi_tot, *gas_par[:4])
     f_nth = nonthermal.f_nt_nelson14(r_R500, *gas_par[4:])
     P_th = P_tot * (1 - f_nth)
     return jnp.array([rho_g, P_tot, P_th, f_nth])
 
 
-_gas_par2gas_props_v = jax.vmap(_gas_par2gas_props, out_axes=1)
+_gas_par2gas_props = {
+    "broken_plaw": _gas_par2gas_props_broken_plaw,
+    "nelson14": _gas_par2gas_props_nelson,
+}
+_gas_par2gas_props_v = {
+    k: jax.vmap(v, out_axes=1) for k, v in _gas_par2gas_props.items()
+}
 
 
 class PicassoPredictor:
@@ -91,6 +104,7 @@ class PicassoPredictor:
         transfom_x: Callable = lambda x: x,
         transfom_y: Callable = lambda y: y,
         fix_params: dict = {},
+        f_nt_model: str = "nelson14",
     ):
         self.mlp = mlp
         self._transfom_x = transfom_x
@@ -107,6 +121,8 @@ class PicassoPredictor:
                 "Cnt": 6,
             }[k]
             self.fix_params[i] = jnp.array(v)
+        self._gas_par2gas_props = _gas_par2gas_props[f_nt_model]
+        self._gas_par2gas_props_v = _gas_par2gas_props_v[f_nt_model]
 
     def transfom_x(self, x: Array) -> Array:
         return self._transfom_x(x)
@@ -169,11 +185,11 @@ class PicassoPredictor:
         """
         gas_par = self.predict_model_parameters(x, net_par)
         if len(gas_par.shape) == 1:
-            rho_g, P_tot, P_th, f_nth = _gas_par2gas_props(
+            rho_g, P_tot, P_th, f_nth = self._gas_par2gas_props(
                 gas_par, phi, r_R500
             )
         else:
-            rho_g, P_tot, P_th, f_nth = _gas_par2gas_props_v(
+            rho_g, P_tot, P_th, f_nth = self._gas_par2gas_props_v(
                 gas_par, phi, r_R500
             )
         return (rho_g, P_tot, P_th, f_nth)
@@ -187,8 +203,9 @@ class PicassoTrainedPredictor(PicassoPredictor):
         transfom_x: Callable = lambda x: x,
         transfom_y: Callable = lambda y: y,
         fix_params: dict = {},
+        f_nt_model: str = "nelson14",
     ):
-        super().__init__(mlp, transfom_x, transfom_y, fix_params)
+        super().__init__(mlp, transfom_x, transfom_y, fix_params, f_nt_model)
         self.net_par = net_par
 
     def predict_gas_model(
@@ -258,6 +275,8 @@ _here = os.path.dirname(os.path.abspath(__file__))
 def load_trained_net(pkl_file: str):
     with open(f"{_here}/trained_networks/{pkl_file}", "rb") as f:
         _params = pickle.load(f)
+    if not ("f_nt_model" in _params):
+        _params["f_nt_model"] = "nelson14"
 
     return PicassoTrainedPredictor(
         FlaxRegMLP(
@@ -274,6 +293,7 @@ def load_trained_net(pkl_file: str):
             maxs=_params["minmax_x"][1],
         ),
         transfom_y=transform_y,
+        f_nt_model=_params["f_nt_model"],
     )
 
 

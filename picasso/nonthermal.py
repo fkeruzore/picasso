@@ -32,15 +32,15 @@ def f_nt_shaw10(
     return alpha * (r_R500**n_nt)
 
 
-def f_nt_nelson14(r_R500: Array, A: float, B: float, C: float) -> Array:
+def f_nt_nelson14(r_RDelta: Array, A: float, B: float, C: float) -> Array:
     """
     Non-thermal pressure fraction computed from an adapted version of
     the Nelson+14 model (see Notes)
 
     Parameters
     ----------
-    r_R500 : array-like
-        Radii normalized to R500c
+    r_RDelta : array-like
+        Radii normalized to RDelta
     A : float
         :math:`A` parameter values
     B : float
@@ -58,17 +58,17 @@ def f_nt_nelson14(r_R500: Array, A: float, B: float, C: float) -> Array:
     The model is computed as:
 
     .. math:: f_{nt} = 1 - A \\times \\left\\{ 1 + \\exp \\left[
-        -\\left( \\frac{r}{B \\times R_{500c}} \\right)^{C} \\right]
+        -\\left( \\frac{r}{B \\times R_\\Delta} \\right)^{C} \\right]
         \\right\\}.
 
     This is a modified version of the original model (see eq. 7 in
-    Nelson+14), where the radius is expressed in units of R500c instead
-    of R200m (which means we expect B to be higher by a factor of ~2.5).
+    Nelson+14), where the radius is expressed in units of RDelta instead
+    of R200m.
     """
-    return 1 - A * (1 + jnp.exp(-((r_R500 / B) ** C)))
+    return 1 - A * (1 + jnp.exp(-((r_RDelta / B) ** C)))
 
 
-def f_nt_generic(r_R500: Array, a: float, b: float, c: float) -> Array:
+def f_nt_generic(r_RDelta: Array, a: float, b: float, c: float) -> Array:
     """
     Generic expression for non-thermal pressure fraction: a power law
     evolution with radius, plus a constant plateau (see Notes)
@@ -76,13 +76,13 @@ def f_nt_generic(r_R500: Array, a: float, b: float, c: float) -> Array:
 
     Parameters
     ----------
-    r_R500 : array-like
-        Radii normalized to R500c
-    a : float
+    r_RDelta : array-like
+        Radii normalized to RDelta
+    A : float
         Non-thermal pressure fraction in the cluster center
-    b : float
-        Non-thermal pressure fraction at r=2*R500c
-    c : float
+    B : float
+        Non-thermal pressure fraction at r=RDelta
+    C : float
         Power law radial dependence of f_nt
 
     Returns
@@ -94,6 +94,6 @@ def f_nt_generic(r_R500: Array, a: float, b: float, c: float) -> Array:
     -----
     The model is computed as:
 
-    .. math:: f_{nt} = a + (b-a) \\left(\\frac{r}{2R_{500c}}\\right)^c
+    .. math:: f_{nt} = A + (B-A) \\left(\\frac{r}{R_\\Delta}\\right)^C
     """
-    return a + (b - a) * ((r_R500 / 2) ** c)
+    return a + (b - a) * (r_RDelta**c)
