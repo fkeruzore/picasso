@@ -410,3 +410,25 @@ def compute_halo_shapes(
     T = 0.5 * (1 + (p / e))
 
     return a, b, c, e, p, T
+
+
+def compute_fof_com_offset(halos: dict) -> NDArray:
+    """
+    Compute the offset between the FoF halo center and the
+    center of mass of its particles.
+
+    Parameters
+    ----------
+    halos : dict
+        HACC haloproperties catalog
+
+    Returns
+    -------
+    NDArray
+        Offset between FoF halo center and center of mass
+    """
+    return np.sqrt(
+        (halos["fof_halo_com_x"] - halos["fof_halo_center_x"]) ** 2
+        + (halos["fof_halo_com_y"] - halos["fof_halo_center_y"]) ** 2
+        + (halos["fof_halo_com_z"] - halos["fof_halo_center_z"]) ** 2
+    )
