@@ -353,3 +353,25 @@ class HACCSODProfiles(HACCDataset):
 
         for name in self.prof_names:
             setattr(self, name, interp_plaw(new_r, old_r, getattr(self, name)))
+
+def computehaloshapes(cat, v):
+    l1 = np.sum([cat[f"{v[1]}_halo_eig{v[0]}1{_x}_go"]**2 for _x in "XYZ"], axis=0)
+    l2 = np.sum([cat[f"{v[1]}_halo_eig{v[0]}2{_x}_go"]**2 for _x in "XYZ"], axis=0)
+    l3 = np.sum([cat[f"{v[1]}_halo_eig{v[0]}3{_x}_go"]**2 for _x in "XYZ"], axis=0)
+    
+    a = l3 ** 0.5        
+    b = l2 ** 0.5        
+    c = l1 ** 0.5
+    
+    L = 1 + ((b/a)**2) + ((c/a)**2)
+    e = (1 - (c/a)**2)/(2*L)
+    
+    p = (1 - (2*(b/a)**2) + (c/a)**2)/(2 * L)
+    
+    T = 0.5 * (1 + (p/e))
+    
+    return a, b, c, e, p, T
+
+
+
+
