@@ -4,7 +4,7 @@ import jax.numpy as jnp
 from numpy.typing import NDArray
 from astropy.cosmology import Cosmology
 from astropy.units import Unit
-from typing import Union
+from typing import Union, Tuple
 from .. import utils
 
 units_P_sim2obs = Unit("Msun Mpc-3 km2 s-2").to("keV cm-3")
@@ -354,24 +354,59 @@ class HACCSODProfiles(HACCDataset):
         for name in self.prof_names:
             setattr(self, name, interp_plaw(new_r, old_r, getattr(self, name)))
 
-def computehaloshapes(cat, v):
-    l1 = np.sum([cat[f"{v[1]}_halo_eig{v[0]}1{_x}_go"]**2 for _x in "XYZ"], axis=0)
-    l2 = np.sum([cat[f"{v[1]}_halo_eig{v[0]}2{_x}_go"]**2 for _x in "XYZ"], axis=0)
-    l3 = np.sum([cat[f"{v[1]}_halo_eig{v[0]}3{_x}_go"]**2 for _x in "XYZ"], axis=0)
-    
-    a = l3 ** 0.5        
-    b = l2 ** 0.5        
-    c = l1 ** 0.5
-    
-    L = 1 + ((b/a)**2) + ((c/a)**2)
-    e = (1 - (c/a)**2)/(2*L)
-    
-    p = (1 - (2*(b/a)**2) + (c/a)**2)/(2 * L)
-    
-    T = 0.5 * (1 + (p/e))
-    
+
+def compute_halo_shapes(
+    halos: dict, use_sod: bool = True, use_reduced: bool = True
+) -> Tuple[NDArray, NDArray, NDArray, NDArray, NDArray, NDArray]:
+    """
+    Compute shape parameters (semi-axes, ellipticity, prolateness,
+    triaxiality) from inertia tensor eigenvectors as stored in a
+    HACC haloproperties catalog.
+
+    Parameters
+    ----------
+    halos : dict
+        HACC haloproperties catalog
+    use_sod : bool, optional
+        Use the SOD inertia tensor (as opposed to the FoF),
+        by default True
+    use_reduced : bool, optional
+        Use the reduced inertia tensor, by default True
+
+    Returns
+    -------
+    NDArray
+        Semi-major axis
+    NDArray
+        Semi-intermediate axis
+    NDArray
+        Semi-minor axis
+    NDArray
+        Ellipticity
+    NDArray
+        Prolateness
+    NDArray
+        Triaxiality
+    """
+    sod = "sod" if use_sod else "fof"
+    red = "R" if use_reduced else "S"
+    l1 = np.sum(
+        [halos[f"{sod}_halo_eig{red}1{_x}_go"] ** 2 for _x in "XYZ"], axis=0
+    )
+    l2 = np.sum(
+        [halos[f"{sod}_halo_eig{red}2{_x}_go"] ** 2 for _x in "XYZ"], axis=0
+    )
+    l3 = np.sum(
+        [halos[f"{sod}_halo_eig{red}3{_x}_go"] ** 2 for _x in "XYZ"], axis=0
+    )
+
+    a, b, c = l3**0.5, l2**0.5, l1**0.5
+
+    L = 1 + ((b / a) ** 2) + ((c / a) ** 2)
+    e = (1 - (c / a) ** 2) / (2 * L)
+
+    p = (1 - (2 * (b / a) ** 2) + (c / a) ** 2) / (2 * L)
+
+    T = 0.5 * (1 + (p / e))
+
     return a, b, c, e, p, T
-
-
-
-
