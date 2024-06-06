@@ -391,13 +391,13 @@ def compute_halo_shapes(
     sod = "sod" if use_sod else "fof"
     red = "R" if use_reduced else "S"
     l1 = np.sum(
-        [halos[f"{sod}_halo_eig{red}1{_x}_go"] ** 2 for _x in "XYZ"], axis=0
+        [halos[f"{sod}_halo_eig{red}1{_x}"] ** 2 for _x in "XYZ"], axis=0
     )
     l2 = np.sum(
-        [halos[f"{sod}_halo_eig{red}2{_x}_go"] ** 2 for _x in "XYZ"], axis=0
+        [halos[f"{sod}_halo_eig{red}2{_x}"] ** 2 for _x in "XYZ"], axis=0
     )
     l3 = np.sum(
-        [halos[f"{sod}_halo_eig{red}3{_x}_go"] ** 2 for _x in "XYZ"], axis=0
+        [halos[f"{sod}_halo_eig{red}3{_x}"] ** 2 for _x in "XYZ"], axis=0
     )
 
     a, b, c = l3**0.5, l2**0.5, l1**0.5
