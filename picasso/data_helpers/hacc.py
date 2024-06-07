@@ -1,6 +1,6 @@
 import numpy as np
-import jax
 import jax.numpy as jnp
+from jax import jit, Array
 from numpy.typing import NDArray
 from astropy.cosmology import Cosmology
 from astropy.units import Unit
@@ -224,7 +224,7 @@ class HACCSODProfiles(HACCDataset):
 
     @classmethod
     def from_cutout(cls, cutout: HACCCutout, r_edges: NDArray):
-        azimuthal_profile = jax.jit(
+        azimuthal_profile = jit(
             utils.azimuthal_profile, static_argnames=["statistics"]
         )
 
@@ -357,7 +357,7 @@ class HACCSODProfiles(HACCDataset):
 
 def compute_halo_shapes(
     halos: dict, use_sod: bool = True, use_reduced: bool = True
-) -> Tuple[NDArray, NDArray, NDArray, NDArray, NDArray, NDArray]:
+) -> Tuple[Array, Array, Array, Array, Array, Array]:
     """
     Compute shape parameters (semi-axes, ellipticity, prolateness,
     triaxiality) from inertia tensor eigenvectors as stored in a
@@ -375,28 +375,28 @@ def compute_halo_shapes(
 
     Returns
     -------
-    NDArray
+    Array
         Semi-major axis
-    NDArray
+    Array
         Semi-intermediate axis
-    NDArray
+    Array
         Semi-minor axis
-    NDArray
+    Array
         Ellipticity
-    NDArray
+    Array
         Prolateness
-    NDArray
+    Array
         Triaxiality
     """
     sod = "sod" if use_sod else "fof"
     red = "R" if use_reduced else "S"
-    l1 = np.sum(
+    l1 = jnp.sum(
         [halos[f"{sod}_halo_eig{red}1{_x}"] ** 2 for _x in "XYZ"], axis=0
     )
-    l2 = np.sum(
+    l2 = jnp.sum(
         [halos[f"{sod}_halo_eig{red}2{_x}"] ** 2 for _x in "XYZ"], axis=0
     )
-    l3 = np.sum(
+    l3 = jnp.sum(
         [halos[f"{sod}_halo_eig{red}3{_x}"] ** 2 for _x in "XYZ"], axis=0
     )
 
@@ -410,25 +410,3 @@ def compute_halo_shapes(
     T = 0.5 * (1 + (p / e))
 
     return a, b, c, e, p, T
-
-
-def compute_fof_com_offset(halos: dict) -> NDArray:
-    """
-    Compute the offset between the FoF halo center and the
-    center of mass of its particles.
-
-    Parameters
-    ----------
-    halos : dict
-        HACC haloproperties catalog
-
-    Returns
-    -------
-    NDArray
-        Offset between FoF halo center and center of mass
-    """
-    return np.sqrt(
-        (halos["fof_halo_com_x"] - halos["fof_halo_center_x"]) ** 2
-        + (halos["fof_halo_com_y"] - halos["fof_halo_center_y"]) ** 2
-        + (halos["fof_halo_com_z"] - halos["fof_halo_center_z"]) ** 2
-    )
