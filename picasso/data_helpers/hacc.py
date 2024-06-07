@@ -410,3 +410,43 @@ def compute_halo_shapes(
     T = 0.5 * (1 + (p / e))
 
     return a, b, c, e, p, T
+
+
+def compute_fof_com_offset(halos: dict) -> NDArray:
+    """
+    Compute the offset between the FoF halo center and the
+    center of mass of its particles.
+
+    Parameters
+    ----------
+    halos : dict
+        HACC haloproperties catalog
+
+    Returns
+    -------
+    NDArray
+        Offset between FoF halo center and center of mass
+    """
+    return np.sqrt(
+        (halos["fof_halo_com_x"] - halos["fof_halo_center_x"]) ** 2
+        + (halos["fof_halo_com_y"] - halos["fof_halo_center_y"]) ** 2
+        + (halos["fof_halo_com_z"] - halos["fof_halo_center_z"]) ** 2
+    )
+
+
+def build_input_vector(halos):
+    shapes = compute_halo_shapes(halos, use_sod=True, use_reduced=True)
+    fof_com_offset = compute_fof_com_offset(halos)
+    haloprops_vector = {
+        "m500": jnp.log10(halos["sod_halo_M500c"]),
+        "m200": jnp.log10(halos["sod_halo_M200c"]),
+        "c200": halos["sod_halo_cdelta"],
+        "d/r200": jnp.log10(fof_com_offset / halos["sod_halo_radius"]),
+        "v": halos["fof_halo_com_v"],
+        # "c/a": shapes[2] / shapes[0],
+        # "b/a": shapes[1] / shapes[0],
+        "e": shapes[3],
+        "p": shapes[4],
+        "t": shapes[5],
+    }
+    return haloprops_vector
