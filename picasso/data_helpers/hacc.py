@@ -1,10 +1,10 @@
 import numpy as np
-import jax
 import jax.numpy as jnp
+from jax import jit, Array
 from numpy.typing import NDArray
 from astropy.cosmology import Cosmology
 from astropy.units import Unit
-from typing import Union
+from typing import Union, Tuple
 from .. import utils
 
 units_P_sim2obs = Unit("Msun Mpc-3 km2 s-2").to("keV cm-3")
@@ -224,7 +224,7 @@ class HACCSODProfiles(HACCDataset):
 
     @classmethod
     def from_cutout(cls, cutout: HACCCutout, r_edges: NDArray):
-        azimuthal_profile = jax.jit(
+        azimuthal_profile = jit(
             utils.azimuthal_profile, static_argnames=["statistics"]
         )
 
@@ -353,3 +353,103 @@ class HACCSODProfiles(HACCDataset):
 
         for name in self.prof_names:
             setattr(self, name, interp_plaw(new_r, old_r, getattr(self, name)))
+
+
+def compute_halo_shapes(
+    halos: dict, use_sod: bool = True, use_reduced: bool = True
+) -> Tuple[Array, Array, Array, Array, Array, Array]:
+    """
+    Compute shape parameters (semi-axes, ellipticity, prolateness,
+    triaxiality) from inertia tensor eigenvectors as stored in a
+    HACC haloproperties catalog.
+
+    Parameters
+    ----------
+    halos : dict
+        HACC haloproperties catalog
+    use_sod : bool, optional
+        Use the SOD inertia tensor (as opposed to the FoF),
+        by default True
+    use_reduced : bool, optional
+        Use the reduced inertia tensor, by default True
+
+    Returns
+    -------
+    Array
+        Semi-major axis
+    Array
+        Semi-intermediate axis
+    Array
+        Semi-minor axis
+    Array
+        Ellipticity
+    Array
+        Prolateness
+    Array
+        Triaxiality
+    """
+    sod = "sod" if use_sod else "fof"
+    red = "R" if use_reduced else "S"
+    l1 = jnp.sum(
+        jnp.array([halos[f"{sod}_halo_eig{red}1{_x}"] ** 2 for _x in "XYZ"]),
+        axis=0,
+    )
+    l2 = jnp.sum(
+        jnp.array([halos[f"{sod}_halo_eig{red}2{_x}"] ** 2 for _x in "XYZ"]),
+        axis=0,
+    )
+    l3 = jnp.sum(
+        jnp.array([halos[f"{sod}_halo_eig{red}3{_x}"] ** 2 for _x in "XYZ"]),
+        axis=0,
+    )
+
+    a, b, c = l3**0.5, l2**0.5, l1**0.5
+
+    L = 1 + ((b / a) ** 2) + ((c / a) ** 2)
+    e = (1 - (c / a) ** 2) / (2 * L)
+
+    p = (1 - (2 * (b / a) ** 2) + (c / a) ** 2) / (2 * L)
+
+    T = 0.5 * (1 + (p / e))
+
+    return a, b, c, e, p, T
+
+
+def compute_fof_com_offset(halos: dict) -> NDArray:
+    """
+    Compute the offset between the FoF halo center and the
+    center of mass of its particles.
+
+    Parameters
+    ----------
+    halos : dict
+        HACC haloproperties catalog
+
+    Returns
+    -------
+    NDArray
+        Offset between FoF halo center and center of mass
+    """
+    return np.sqrt(
+        (halos["fof_halo_com_x"] - halos["fof_halo_center_x"]) ** 2
+        + (halos["fof_halo_com_y"] - halos["fof_halo_center_y"]) ** 2
+        + (halos["fof_halo_com_z"] - halos["fof_halo_center_z"]) ** 2
+    )
+
+
+def build_input_vector(halos):
+    shapes = compute_halo_shapes(halos, use_sod=True, use_reduced=True)
+    fof_com_offset = compute_fof_com_offset(halos)
+    haloprops_vector = {
+        "m500": jnp.log10(halos["sod_halo_M500c"]),
+        "m200": jnp.log10(halos["sod_halo_M200c"]),
+        "c200": halos["sod_halo_cdelta"],
+        "d/r200": jnp.log10(fof_com_offset / halos["sod_halo_radius"]),
+        "v": halos["fof_halo_com_v"],
+        # "c/a": shapes[2] / shapes[0],
+        # "b/a": shapes[1] / shapes[0],
+        "e": shapes[3],
+        "p": shapes[4],
+        "t": shapes[5],
+    }
+    return haloprops_vector
