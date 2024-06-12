@@ -1,7 +1,6 @@
 __author__ = "Florian Kéruzoré"
-__email__ = "fkeruzore@anl.gov"
+__email__ = "florian.keruzore@gmail.com"
 
-__all__ = ["fitting", "nfw", "cic", "sph", "azimuthal_profile"]
+__all__ = ["sph"]
 
-from . import fitting, nfw, cic, sph
-from .azimuthal_profile import azimuthal_profile
+from . import sph
