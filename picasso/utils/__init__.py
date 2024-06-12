@@ -1,5 +1,5 @@
 __author__ = "Florian Kéruzoré"
-__email__ = "fkeruzore@anl.gov"
+__email__ = "florian.keruzore@gmail.com"
 
 __all__ = ["sph"]
 
