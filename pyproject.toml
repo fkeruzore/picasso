@@ -12,12 +12,11 @@ scipy = "^1.11.2"
 h5py = "^3.9.0"
 astropy = "^5.3.3"
 
-[tool.poetry.group.data_helpers]
-optional = true
+[tool.poetry.group.jax]
 
-[tool.poetry.group.data_helpers.dependencies]
-pygio = {git = "https://git.cels.anl.gov/hacc/genericio.git"}
-matplotlib = "^3.8.1"
+[tool.poetry.group.jax.dependencies]
+flax = "^0.8.1"
+jax = "^0.4.20"
 
 [tool.poetry.group.tests]
 optional = true
