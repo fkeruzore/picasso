@@ -1,6 +1,5 @@
 import numpy as np
-from numpy.typing import NDArray
-from astropy.table import Table
+from scipy.spatial import KDTree
 
 
 def match_halo_catalogs(
@@ -13,8 +12,10 @@ def match_halo_catalogs(
     key_M: str = "sod_halo_M500c",
     key_tag: str = "fof_halo_tag",
     key_center_prefix: str = "fof_halo_center_",
+    suffix_go: str = "_GO",
+    suffix_hy: str = "_HY",
     verbose: bool = True,
-) -> (Table, NDArray, NDArray):
+) -> dict:
     """Matches hydro counterparts to a gravity-only halo catalog using
     spatial separation and mass difference.
 
@@ -49,17 +50,9 @@ def match_halo_catalogs(
 
     Returns
     -------
-    Table
-        Table containing matches. Two columns: `key_tag`_GO for
-        gravity-only tags, `key_tag`_HY for hydro halo tags.
-        Rows are halos in `halos_go`. If no match was found, the hydro
-        tag is set to -1.
-    array
-        Tags of hydro halo matches for GO halos (shape=n_halos_go).
-        If no match was found, the tag is set to -1.
-    array
-        Tags of GO halo matches for hydro halos (shape=n_halos_hydro).
-        If no match was found, the tag is set to -1.
+    dict
+        Dictionary with keys from `halos_go` and `halos_hy` and values
+        matched to each other, with respective suffixes.
     """
     for k in [key_R, key_M, key_tag] + [
         f"{key_center_prefix}{x}" for x in "xyz"
@@ -67,51 +60,43 @@ def match_halo_catalogs(
         assert k in halos_go.keys(), f"{k} is not a key in `halos_go`"
         assert k in halos_hy.keys(), f"{k} is not a key in `halos_hy`"
 
-    tags_hy_match_in_go = -1 * np.ones_like(halos_go[key_tag])
-    tags_go_match_in_hy = -1 * np.ones_like(halos_hy[key_tag])
-
-    tags_matches = []
     n_halos = len(halos_go[key_tag])
+
+    halos_matched = {
+        **{f"{k}{suffix_go}": v for k, v in halos_go.items()},
+        **{
+            f"{k}{suffix_hy}": np.zeros(n_halos, v.dtype) - 1
+            for k, v in halos_hy.items()
+        },
+    }
+
+    xyz_go = np.array([halos_go[f"{key_center_prefix}{x}"] for x in "xyz"]).T
+    xyz_go = np.fmod(xyz_go + box_size, box_size)
+    xyz_hy = np.array([halos_hy[f"{key_center_prefix}{x}"] for x in "xyz"]).T
+    xyz_hy = np.fmod(xyz_hy + box_size, box_size)
+
+    dists_best_n, i_best_n = KDTree(xyz_hy, boxsize=box_size).query(
+        xyz_go, k=5
+    )
     for i_go in range(n_halos):
         halo = {k: v[i_go] for k, v in halos_go.items()}
-        xyz = {x: halo[f"{key_center_prefix}{x}"] for x in "xyz"}
         M_i, R_i = halo[key_M], halo[key_R]
-        tag = halo[key_tag]
-        tags_matches_i = {f"{key_tag}_GO": tag, f"{key_tag}_HY": -1}
-
-        dx, dy, dz = [
-            np.fmod((halos_hy[f"{key_center_prefix}{x}"] - xyz[x]), 576.0)
-            for x in "xyz"
-        ]
-        dists = np.sqrt(dx**2 + dy**2 + dz**2)
-
-        # Limit search to halos matching distance criterion (="cands")
-        msk_cands = dists <= (d_R_max * R_i)
-        dists = dists[msk_cands]
-        cands = {k: v[msk_cands] for k, v in halos_hy.items()}
-
-        # Sort candidates by distance to halo center
-        dsort = np.argsort(dists)
-        cands_dsorted = {k: v[dsort] for k, v in cands.items()}
-
-        success = False
-        for j_hy in range(len(dsort)):
-            M_j = cands_dsorted[key_M][j_hy]
-            if np.abs(M_j - M_i) < (d_M_max * M_i):
-                tag_hy = cands_dsorted[key_tag][j_hy]
-                tags_matches_i[f"{key_tag}_HY"] = tag_hy
-                success = True
-                break
-
-        tags_matches.append(tags_matches_i)
+        cands = {k: v[i_best_n[i_go]] for k, v in halos_hy.items()}
+        msk_cands = np.logical_and(
+            dists_best_n[i_go] <= (d_R_max * R_i),
+            np.abs(cands[key_M] - M_i) < (d_M_max * M_i),
+        )
+        success = np.any(msk_cands)
         if success:
-            tags_hy_match_in_go[i_go] = tag_hy
-            i_hy = np.where(halos_hy[key_tag] == tag_hy)[0][0]
-            tags_go_match_in_hy[i_hy] = tag
+            i_hy = i_best_n[i_go][msk_cands][0]
+            for k, v in halos_hy.items():
+                halos_matched[f"{k}{suffix_hy}"][i_go] = v[i_hy]
 
-    tags_matches = Table(tags_matches)
     if verbose:
-        n_nomatch = (tags_matches[f"{key_tag}_HY"] == -1).sum()
-        f_nomatch = n_nomatch / n_halos
-        print(f"-> {n_nomatch}/{n_halos} ({100*f_nomatch:.2f}%) unmatched")
-    return tags_matches, tags_hy_match_in_go, tags_go_match_in_hy
+        n_matched = np.sum(halos_matched[f"{key_tag}{suffix_hy}"] != -1)
+        print(
+            f"Matched {n_matched} of {n_halos} GO halos to hydro halos",
+            f"({n_matched / n_halos:.2%})",
+        )
+
+    return halos_matched

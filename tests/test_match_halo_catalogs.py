@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from picasso.data_helpers import match_halo_catalogs
 import pytest
 
@@ -25,7 +26,7 @@ def test_match_halo_catalogs(test_unmatched):
         k = f"center_{x}"
         halos_hy[k] = halos_go[k] + np.random.uniform(0.0, 0.1, n_go)
 
-    matches, tags_hy_in_go, tags_go_in_hy = match_halo_catalogs(
+    halos_matched = match_halo_catalogs(
         halos_go,
         halos_hy,
         75.0 if test_unmatched else 50.0,
@@ -36,16 +37,11 @@ def test_match_halo_catalogs(test_unmatched):
         key_tag="tag",
         key_center_prefix="center_",
     )
-    assert np.all(matches["tag_HY"] != -1), "Found unmatched halos"
+    halos_matched = pd.DataFrame(halos_matched)
+    assert np.all(halos_matched["tag_HY"] != -1), "Found unmatched halos"
     assert np.all(
-        matches["tag_GO"] == matches["tag_HY"] - 20
+        halos_matched["tag_GO"] == halos_matched["tag_HY"] - 20
     ), "Not all halos got matched to the correct counterpart"
-    assert np.all(
-        tags_hy_in_go == halos_go["tag"] + 20
-    ), "Hydro match tags are not correctly attributed"
-    assert np.all(
-        tags_go_in_hy == halos_hy["tag"] - 20
-    ), "GO match tags are not correctly attributed"
 
     if test_unmatched:  # Add a GO halo with no match
         halos_go_b = {}
@@ -56,7 +52,7 @@ def test_match_halo_catalogs(test_unmatched):
         halos_go_b["R"] = np.append(halos_go["R"], [1.0])
         halos_go_b["M"] = halos_go_b["R"] ** 3
 
-        matches_b, tags_hy_in_go_b, tags_go_in_hy_b = match_halo_catalogs(
+        halos_matched_b = match_halo_catalogs(
             halos_go_b,
             halos_hy,
             75.0,
@@ -67,10 +63,5 @@ def test_match_halo_catalogs(test_unmatched):
             key_tag="tag",
             key_center_prefix="center_",
         )
-        assert np.all(matches_b[:-1] == matches)
-        assert np.all(tags_go_in_hy_b == tags_go_in_hy)
-        assert np.all(tags_hy_in_go_b[:-1] == tags_hy_in_go)
-        assert np.all(tags_hy_in_go_b[-1] == -1), (
-            "The unmatched GO halo was tagged as a match to halo "
-            + f"{tags_hy_in_go_b[-1]}"
-        )
+        halos_matched_b = pd.DataFrame(halos_matched_b)
+        assert np.all(halos_matched_b[:-1] == halos_matched)
