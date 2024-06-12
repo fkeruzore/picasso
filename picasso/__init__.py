@@ -7,7 +7,6 @@ __all__ = [
     "polytrop",
     "polytrop_ostriker",
     "utils",
-    "data_helpers",
     "predictors",
 ]
 
@@ -17,5 +16,4 @@ from . import (
     polytrop_ostriker,
     utils,
     predictors,
-    data_helpers,
 )
