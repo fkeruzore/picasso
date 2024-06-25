@@ -96,4 +96,6 @@ def f_nt_generic(r_RDelta: Array, a: float, b: float, c: float) -> Array:
 
     .. math:: f_{nt} = A + (B-A) \\left(\\frac{r}{R_\\Delta}\\right)^C
     """
-    return a + (b - a) * (r_RDelta**c)
+    f = a + (b - a) * (r_RDelta**c)
+    f = jnp.where(f < 1.0, f, 1.0)
+    return f
