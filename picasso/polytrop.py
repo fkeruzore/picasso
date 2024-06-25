@@ -18,7 +18,7 @@ notes = """
 """
 
 
-def theta(phi: Array, Gamma: float, theta_0: float) -> Array:
+def theta(phi: Array, theta_0: float) -> Array:
     """
     Re-parametrized polytropic variable.
 
@@ -26,8 +26,6 @@ def theta(phi: Array, Gamma: float, theta_0: float) -> Array:
     ----------
     phi : Array
         Normalized isolated gravitational potential (see Notes)
-    Gamma : float
-        Gas polytropic index
     theta_0 : float
         Potential prefactor (see Notes)
 
@@ -36,13 +34,19 @@ def theta(phi: Array, Gamma: float, theta_0: float) -> Array:
     Array
         Polytropic variable for each phi
     """
-    # t = 1 - ((Gamma - 1) / Gamma) * theta_0 * phi
     t = 1 - (theta_0 * phi)
     t = jnp.where(t >= 0, t, 0)
     return t
 
 
-def P_g(phi: Array, P_0: float, Gamma: float, theta_0: float) -> Array:
+def P_g(
+    phi: Array,
+    r_norm: float,
+    P_0: float,
+    Gamma_0: float,
+    Gamma_1: float,
+    theta_0: float,
+) -> Array:
     """
     Polytropic gas pressure (total pressure, therm. + kin.).
 
@@ -62,11 +66,19 @@ def P_g(phi: Array, P_0: float, Gamma: float, theta_0: float) -> Array:
     Array
         Gas pressure (total pressure, therm. + kin.) for each phi
     """
-    t = theta(phi, Gamma, theta_0)
+    t = theta(phi, theta_0)
+    Gamma = jnp.where(r_norm <= 1, Gamma_0, Gamma_1)
     return P_0 * (t ** (Gamma / (Gamma - 1)))
 
 
-def rho_g(phi: Array, rho_0: float, Gamma: float, theta_0: float) -> Array:
+def rho_g(
+    phi: Array,
+    r_norm: float,
+    rho_0: float,
+    Gamma_0: float,
+    Gamma_1: float,
+    theta_0: float,
+) -> Array:
     """
     Polytropic gas density.
 
@@ -86,12 +98,19 @@ def rho_g(phi: Array, rho_0: float, Gamma: float, theta_0: float) -> Array:
     Array
         Gas density for each phi
     """
-    t = theta(phi, Gamma, theta_0)
+    t = theta(phi, theta_0)
+    Gamma = jnp.where(r_norm <= 1, Gamma_0, Gamma_1)
     return rho_0 * (t ** (1 / (Gamma - 1)))
 
 
 def rho_P_g(
-    phi: Array, rho_0: float, P_0: float, Gamma: float, theta_0: float
+    phi: Array,
+    r_norm: float,
+    rho_0: float,
+    P_0: float,
+    Gamma_0: float,
+    Gamma_1: float,
+    theta_0: float,
 ) -> Tuple[Array, Array]:
     """
     Polytropic gas density and pressure (total pressure, therm. + kin.).
@@ -116,7 +135,8 @@ def rho_P_g(
     Array
         Gas pressure (total pressure, therm. + kin.) for each phi
     """
-    t = theta(phi, Gamma, theta_0)
+    t = theta(phi, theta_0)
+    Gamma = jnp.where(r_norm <= 1, Gamma_0, Gamma_1)
     rho = rho_0 * (t ** (1 / (Gamma - 1)))
     P = P_0 * (t ** (Gamma / (Gamma - 1)))
     return rho, P

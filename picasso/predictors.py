@@ -74,16 +74,16 @@ class FlaxRegMLP(nn.Module):
         return x
 
 
-def _gas_par2gas_props_broken_plaw(gas_par, phi_tot, r_R500):
-    rho_g, P_tot = polytrop.rho_P_g(phi_tot, *gas_par[:4])
-    f_nth = nonthermal.f_nt_generic(r_R500, *gas_par[4:])
+def _gas_par2gas_props_broken_plaw(gas_par, phi_tot, r_pol, r_fnt):
+    rho_g, P_tot = polytrop.rho_P_g(phi_tot, r_pol, *gas_par[:5])
+    f_nth = nonthermal.f_nt_generic(r_fnt, *gas_par[5:])
     P_th = P_tot * (1 - f_nth)
     return jnp.array([rho_g, P_tot, P_th, f_nth])
 
 
-def _gas_par2gas_props_nelson(gas_par, phi_tot, r_R500):
-    rho_g, P_tot = polytrop.rho_P_g(phi_tot, *gas_par[:4])
-    f_nth = nonthermal.f_nt_nelson14(r_R500, *gas_par[4:])
+def _gas_par2gas_props_nelson(gas_par, phi_tot, r_pol, r_fnt):
+    rho_g, P_tot = polytrop.rho_P_g(phi_tot, r_pol, *gas_par[:5])
+    f_nth = nonthermal.f_nt_nelson14(r_fnt, *gas_par[5:])
     P_th = P_tot * (1 - f_nth)
     return jnp.array([rho_g, P_tot, P_th, f_nth])
 
@@ -104,7 +104,7 @@ class PicassoPredictor:
         transfom_x: Callable = lambda x: x,
         transfom_y: Callable = lambda y: y,
         fix_params: dict = {},
-        f_nt_model: str = "nelson14",
+        f_nt_model: str = "broken_plaw",
     ):
         self.mlp = mlp
         self._transfom_x = transfom_x
@@ -114,11 +114,12 @@ class PicassoPredictor:
             i = {
                 "rho0": 0,
                 "P0": 1,
-                "Gamma": 2,
-                "theta0": 3,
-                "Ant": 4,
-                "Bnt": 5,
-                "Cnt": 6,
+                "Gamma0": 2,
+                "Gamma1": 3,
+                "theta0": 4,
+                "Ant": 5,
+                "Bnt": 6,
+                "Cnt": 7,
             }[k]
             self.fix_params[i] = jnp.array(v)
         self._gas_par2gas_props = _gas_par2gas_props[f_nt_model]
@@ -153,7 +154,7 @@ class PicassoPredictor:
         return self.transfom_y(y_)
 
     def predict_gas_model(
-        self, x: Array, phi: Array, r_R500: Array, net_par: dict
+        self, x: Array, phi: Array, r_pol: Array, r_fnt: Array, net_par: dict
     ) -> Sequence[Array]:
         """
         Predicts the gas properties from halo properties ant potential
@@ -186,11 +187,11 @@ class PicassoPredictor:
         gas_par = self.predict_model_parameters(x, net_par)
         if len(gas_par.shape) == 1:
             rho_g, P_tot, P_th, f_nth = self._gas_par2gas_props(
-                gas_par, phi, r_R500
+                gas_par, phi, r_pol, r_fnt
             )
         else:
             rho_g, P_tot, P_th, f_nth = self._gas_par2gas_props_v(
-                gas_par, phi, r_R500
+                gas_par, phi, r_pol, r_fnt
             )
         return (rho_g, P_tot, P_th, f_nth)
 
@@ -209,9 +210,9 @@ class PicassoTrainedPredictor(PicassoPredictor):
         self.net_par = net_par
 
     def predict_gas_model(
-        self, x: Array, phi: Array, r_R500: Array, *args
+        self, x: Array, phi: Array, r_pol: Array, r_fnt: Array, *args
     ) -> Sequence[Array]:
-        return super().predict_gas_model(x, phi, r_R500, self.net_par)
+        return super().predict_gas_model(x, phi, r_pol, r_fnt, self.net_par)
 
     def predict_model_parameters(self, x: Array, *args) -> Array:
         return super().predict_model_parameters(x, self.net_par)
