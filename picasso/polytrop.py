@@ -39,6 +39,12 @@ def theta(phi: Array, theta_0: float) -> Array:
     return t
 
 
+def Gamma(r_norm, Gamma_0, Gamma_1):
+    g = Gamma_0 * (1 + r_norm) ** Gamma_1
+    g = jnp.where(g <= 1.0, 1.0, g)
+    return g
+
+
 def P_g(
     phi: Array,
     r_norm: float,
@@ -67,8 +73,8 @@ def P_g(
         Gas pressure (total pressure, therm. + kin.) for each phi
     """
     t = theta(phi, theta_0)
-    Gamma = jnp.where(r_norm <= 1, Gamma_0, Gamma_1)
-    return P_0 * (t ** (Gamma / (Gamma - 1)))
+    g = Gamma(r_norm, Gamma_0, Gamma_1)
+    return P_0 * (t ** (g / (g - 1)))
 
 
 def rho_g(
@@ -99,8 +105,8 @@ def rho_g(
         Gas density for each phi
     """
     t = theta(phi, theta_0)
-    Gamma = jnp.where(r_norm <= 1, Gamma_0, Gamma_1)
-    return rho_0 * (t ** (1 / (Gamma - 1)))
+    g = Gamma(r_norm, Gamma_0, Gamma_1)
+    return rho_0 * (t ** (1 / (g - 1)))
 
 
 def rho_P_g(
@@ -136,9 +142,9 @@ def rho_P_g(
         Gas pressure (total pressure, therm. + kin.) for each phi
     """
     t = theta(phi, theta_0)
-    Gamma = jnp.where(r_norm <= 1, Gamma_0, Gamma_1)
-    rho = rho_0 * (t ** (1 / (Gamma - 1)))
-    P = P_0 * (t ** (Gamma / (Gamma - 1)))
+    g = Gamma(r_norm, Gamma_0, Gamma_1)
+    rho = rho_0 * (t ** (1 / (g - 1)))
+    P = P_0 * (t ** (g / (g - 1)))
     return rho, P
 
 
