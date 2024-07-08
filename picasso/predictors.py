@@ -132,8 +132,11 @@ class PicassoPredictor:
             Halo properties.
         phi : Array
             Potential values.
-        r_R500 : Array
-            Radii in units of R500c.
+        r_pol : Array
+            Normalized radii to be used for the polytropic model.
+        r_fnt : Array
+            Normalized radii to be used for the non-thermal pressure
+            fraction model.
 
         Returns
         -------

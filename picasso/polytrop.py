@@ -43,14 +43,14 @@ def theta(phi: Array, theta_0: Array) -> Array:
     return t
 
 
-def Gamma_r(r: Array, Gamma_0: Array, c_Gamma: Array):
+def Gamma_r(r_norm: Array, Gamma_0: Array, c_Gamma: Array):
     """
     Compute the radius-dependent polytropic index Gamma(r), following
     Komatsu & Seljak (2001).
 
     Parameters
     ----------
-    r : Array
+    r_norm : Array
         Normalized radii
     Gamma_0 : Array
         Central value of the polytropic index
@@ -62,7 +62,7 @@ def Gamma_r(r: Array, Gamma_0: Array, c_Gamma: Array):
     Array
         Gamma values at specified radii
     """
-    x = c_Gamma * r
+    x = c_Gamma * r_norm
     return Gamma_0 + ((x + 1) * jnp.log(x + 1) - x) / (
         (3 * x + 1) * jnp.log(x + 1)
     )
@@ -83,6 +83,8 @@ def P_g(
     ----------
     phi : Array
         Normalized isolated gravitational potential (see Notes)
+    r_norm : Array
+        Normalized radii to be used for the polytropic model.
     P_0 : Array
         Central gas pressure (total pressure, therm. + kin.)
     Gamma_0 : Array
@@ -117,6 +119,8 @@ def rho_g(
     ----------
     phi : Array
         Normalized isolated gravitational potential (see Notes)
+    r_norm : Array
+        Normalized radii to be used for the polytropic model.
     rho_0 : Array
         Central gas density
     Gamma_0 : Array
@@ -152,6 +156,8 @@ def rho_P_g(
     ----------
     phi : Array
         Normalized isolated gravitational potential (see Notes)
+    r_norm : Array
+        Normalized radii to be used for the polytropic model.
     rho_0 : Array
         Central gas density
     P_0 : Array
