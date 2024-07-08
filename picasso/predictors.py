@@ -115,7 +115,7 @@ class PicassoPredictor:
                 "rho0": 0,
                 "P0": 1,
                 "Gamma0": 2,
-                "Gamma1": 3,
+                "c_Gamma": 3,
                 "theta0": 4,
                 "Ant": 5,
                 "Bnt": 6,
