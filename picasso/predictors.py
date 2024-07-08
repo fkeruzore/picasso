@@ -1,23 +1,12 @@
 import jax
 import jax.numpy as jnp
 import flax.linen as nn
-import jax.scipy.stats as jss
-import pickle
 import os
 
 from jax import Array
 from typing import Sequence, Callable, Iterable
-from functools import partial
 
 from . import polytrop, nonthermal
-
-
-def soft_clip(x, a, b, c=1.0):
-    return (
-        x
-        - jnp.log(1 + jnp.exp(c * (x - b))) / c
-        + jnp.log(1 + jnp.exp(-c * (x - a))) / c
-    )
 
 
 possible_activations = {
@@ -26,31 +15,8 @@ possible_activations = {
     "tanh": nn.tanh,
     "sigmoid": nn.sigmoid,
     "clip": jnp.clip,
-    "soft_clip": soft_clip,
     "linear": lambda x: x,
 }
-
-
-def transform_minmax(x: Array, mins: Array, maxs: Array):
-    return (x - mins) / (maxs - mins)
-
-
-def inv_transform_minmax(x: Array, mins: Array, maxs: Array):
-    return x * (maxs - mins) + mins
-
-
-def transform_y(y: Array):
-    y_trans = 10**y
-    y_trans = y_trans.at[..., 2].add(1.0)
-    y_trans = y_trans.at[..., 3].multiply(1e-6)
-    return y_trans
-
-
-def quantile_normalization(x: Array, dist=jss.norm):
-    ranks = jnp.argsort(x, axis=0)
-    sorted_ranks = jnp.argsort(ranks, axis=0)
-    normalized = dist.ppf((sorted_ranks + 0.5) / x.shape[0])
-    return normalized
 
 
 class FlaxRegMLP(nn.Module):
@@ -273,31 +239,34 @@ def draw_mlp(mlp: FlaxRegMLP, colors=["k", "w"], alpha_line=1.0):
 _here = os.path.dirname(os.path.abspath(__file__))
 
 
-def load_trained_net(pkl_file: str):
-    with open(f"{_here}/trained_networks/{pkl_file}", "rb") as f:
-        _params = pickle.load(f)
-    if not ("f_nt_model" in _params):
-        _params["f_nt_model"] = "nelson14"
-
-    return PicassoTrainedPredictor(
-        FlaxRegMLP(
-            _params["X_DIM"],
-            _params["Y_DIM"],
-            _params["hidden_features"],
-            _params["activations"],
-            _params["extra_args_output_activation"],
-        ),
-        _params["net_par"],
-        transfom_x=partial(
-            transform_minmax,
-            mins=_params["minmax_x"][0],
-            maxs=_params["minmax_x"][1],
-        ),
-        transfom_y=transform_y,
-        f_nt_model=_params["f_nt_model"],
-    )
-
-
-net12 = load_trained_net("net12.pkl")
-
-net1 = load_trained_net("net1.pkl")
+# import pickle
+# from functools import partial
+#
+# def load_trained_net(pkl_file: str):
+#     with open(f"{_here}/trained_networks/{pkl_file}", "rb") as f:
+#         _params = pickle.load(f)
+#     if not ("f_nt_model" in _params):
+#         _params["f_nt_model"] = "nelson14"
+#
+#     return PicassoTrainedPredictor(
+#         FlaxRegMLP(
+#             _params["X_DIM"],
+#             _params["Y_DIM"],
+#             _params["hidden_features"],
+#             _params["activations"],
+#             _params["extra_args_output_activation"],
+#         ),
+#         _params["net_par"],
+#         transfom_x=partial(
+#             transform_minmax,
+#             mins=_params["minmax_x"][0],
+#             maxs=_params["minmax_x"][1],
+#         ),
+#         transfom_y=transform_y,
+#         f_nt_model=_params["f_nt_model"],
+#     )
+#
+#
+# net12 = load_trained_net("net12.pkl")
+#
+# net1 = load_trained_net("net1.pkl")
