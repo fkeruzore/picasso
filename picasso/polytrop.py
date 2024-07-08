@@ -15,10 +15,14 @@ notes = """
 
       .. math:: \\theta_0 = \\frac{\\Gamma - 1}{\\Gamma}
         \\times \\frac{\\rho_0}{P_0}
+
+    * A fixed value of the polytropic index (e.g. 1.2) can be achieved
+      with `Gamma = Gamma_r(r, 1.2, 1e-6)` (note that `c_Gamma` cannot
+      be zero by definition).
 """
 
 
-def theta(phi: Array, theta_0: float) -> Array:
+def theta(phi: Array, theta_0: Array) -> Array:
     """
     Re-parametrized polytropic variable.
 
@@ -26,7 +30,7 @@ def theta(phi: Array, theta_0: float) -> Array:
     ----------
     phi : Array
         Normalized isolated gravitational potential (see Notes)
-    theta_0 : float
+    theta_0 : Array
         Potential prefactor (see Notes)
 
     Returns
@@ -39,7 +43,25 @@ def theta(phi: Array, theta_0: float) -> Array:
     return t
 
 
-def Gamma_r(r, Gamma_0, c_Gamma):
+def Gamma_r(r: Array, Gamma_0: Array, c_Gamma: Array):
+    """
+    Compute the radius-dependent polytropic index Gamma(r), following
+    Komatsu & Seljak (2001).
+
+    Parameters
+    ----------
+    r : Array
+        Normalized radii
+    Gamma_0 : Array
+        Central value of the polytropic index
+    c_Gamma : Array
+        Polytropic concentration value
+
+    Returns
+    -------
+    Array
+        Gamma values at specified radii
+    """
     x = c_Gamma * r
     return Gamma_0 + ((x + 1) * jnp.log(x + 1) - x) / (
         (3 * x + 1) * jnp.log(x + 1)
@@ -48,11 +70,11 @@ def Gamma_r(r, Gamma_0, c_Gamma):
 
 def P_g(
     phi: Array,
-    r_norm: float,
-    P_0: float,
-    Gamma_0: float,
-    c_Gamma: float,
-    theta_0: float,
+    r_norm: Array,
+    P_0: Array,
+    Gamma_0: Array,
+    c_Gamma: Array,
+    theta_0: Array,
 ) -> Array:
     """
     Polytropic gas pressure (total pressure, therm. + kin.).
@@ -61,11 +83,13 @@ def P_g(
     ----------
     phi : Array
         Normalized isolated gravitational potential (see Notes)
-    P_0 : float
+    P_0 : Array
         Central gas pressure (total pressure, therm. + kin.)
-    Gamma : float
-        Gas polytropic index
-    theta_0 : float
+    Gamma_0 : Array
+        Central value of the polytropic index
+    c_Gamma : Array
+        Polytropic concentration value
+    theta_0 : Array
         Potential prefactor (see Notes)
 
     Returns
@@ -80,11 +104,11 @@ def P_g(
 
 def rho_g(
     phi: Array,
-    r_norm: float,
-    rho_0: float,
-    Gamma_0: float,
-    c_Gamma: float,
-    theta_0: float,
+    r_norm: Array,
+    rho_0: Array,
+    Gamma_0: Array,
+    c_Gamma: Array,
+    theta_0: Array,
 ) -> Array:
     """
     Polytropic gas density.
@@ -93,11 +117,13 @@ def rho_g(
     ----------
     phi : Array
         Normalized isolated gravitational potential (see Notes)
-    rho_0 : float
+    rho_0 : Array
         Central gas density
-    Gamma : float
-        Gas polytropic index
-    theta_0 : float
+    Gamma_0 : Array
+        Central value of the polytropic index
+    c_Gamma : Array
+        Polytropic concentration value
+    theta_0 : Array
         Potential prefactor (see Notes)
 
     Returns
@@ -112,12 +138,12 @@ def rho_g(
 
 def rho_P_g(
     phi: Array,
-    r_norm: float,
-    rho_0: float,
-    P_0: float,
-    Gamma_0: float,
-    c_Gamma: float,
-    theta_0: float,
+    r_norm: Array,
+    rho_0: Array,
+    P_0: Array,
+    Gamma_0: Array,
+    c_Gamma: Array,
+    theta_0: Array,
 ) -> Tuple[Array, Array]:
     """
     Polytropic gas density and pressure (total pressure, therm. + kin.).
@@ -126,13 +152,15 @@ def rho_P_g(
     ----------
     phi : Array
         Normalized isolated gravitational potential (see Notes)
-    rho_0 : float
+    rho_0 : Array
         Central gas density
-    P_0 : float
+    P_0 : Array
         Central gas pressure (total pressure, therm. + kin.)
-    Gamma : float
-        Gas polytropic index
-    theta_0 : float
+    Gamma_0 : Array
+        Central value of the polytropic index
+    c_Gamma : Array
+        Polytropic concentration value
+    theta_0 : Array
         Potential prefactor (see Notes)
 
     Returns
