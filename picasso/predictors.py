@@ -109,19 +109,19 @@ class PicassoPredictor:
         self.mlp = mlp
         self._transfom_x = transfom_x
         self._transfom_y = transfom_y
+        self.param_indices = {
+            "rho_0": 0,
+            "P_0": 1,
+            "Gamma_0": 2,
+            "c_Gamma": 3,
+            "theta_0": 4,
+            "A_nt": 5,
+            "B_nt": 6,
+            "C_nt": 7,
+        }
         self.fix_params = {}
         for k, v in fix_params.items():
-            i = {
-                "rho0": 0,
-                "P0": 1,
-                "Gamma0": 2,
-                "c_Gamma": 3,
-                "theta0": 4,
-                "Ant": 5,
-                "Bnt": 6,
-                "Cnt": 7,
-            }[k]
-            self.fix_params[i] = jnp.array(v)
+            self.fix_params[self.param_indices[k]] = jnp.array(v)
         self._gas_par2gas_props = _gas_par2gas_props[f_nt_model]
         self._gas_par2gas_props_v = _gas_par2gas_props_v[f_nt_model]
 
