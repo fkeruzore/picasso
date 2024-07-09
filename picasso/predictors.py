@@ -95,9 +95,15 @@ class PicassoPredictor:
         return self._transfom_x(x)
 
     def transfom_y(self, y: Array) -> Array:
+        # First make the output the right shape to be able to apply the
+        # y scaling regardless of fixed parameters
+        for k in self.fix_params.keys():
+            y = jnp.insert(y, k, 0.0, axis=-1)
+        # Apply the y scaling
         y_out = self._transfom_y(y)
+        # Fix parameters that need to be fixed
         for k, v in self.fix_params.items():
-            y_out = jnp.insert(y_out, k, v, axis=-1)
+            y_out = y_out.at[..., k].set(v)
         return y_out
 
     def predict_model_parameters(self, x: Array, net_par: dict) -> Array:
