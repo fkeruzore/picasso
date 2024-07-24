@@ -2,25 +2,6 @@ from jax import Array
 import jax.numpy as jnp
 from typing import Tuple
 
-notes = """
-    Notes
-    -----
-    * The potential :math:`\\phi` is to be normalized to be zero at the
-      bottom of the well, and positive everywhere else. This definition
-      makes it equivalent to :math:`(\\phi - \\phi_0)` in the Ostriker
-      model.
-
-    * :math:`\\theta_0` is the pre-factor to multiply this potential
-      with. In the Ostriker model,
-
-      .. math:: \\theta_0 = \\frac{\\Gamma - 1}{\\Gamma}
-        \\times \\frac{\\rho_0}{P_0}
-
-    * A fixed value of the polytropic index (e.g. 1.2) can be achieved
-      with `Gamma = Gamma_r(r, 1.2, 1e-6)` (note that `c_Gamma` cannot
-      be zero by definition).
-"""
-
 
 def theta(phi: Array, theta_0: Array) -> Array:
     """
@@ -204,7 +185,26 @@ def rho_P_g(
     return rho, P
 
 
-theta.__doc__ += notes
-P_g.__doc__ += notes
-rho_g.__doc__ += notes
-rho_P_g.__doc__ += notes
+notes = """
+    Notes
+    -----
+"""
+
+notes_pot = """
+    * The potential :math:`\\phi` is to be normalized to be zero at the
+      bottom of the well, and positive everywhere else. This definition
+      makes it equivalent to :math:`(\\phi - \\phi_0)` in the Ostriker
+      model.
+"""
+
+notes_gamma = """
+    * A fixed value of the polytropic index (e.g. 1.2) can be achieved
+      with `Gamma = Gamma_r(r, 1.2, 0)`
+"""
+
+
+Gamma_r.__doc__ += notes + notes_gamma
+theta.__doc__ += notes + notes_pot
+P_g.__doc__ += notes + notes_pot + notes_gamma
+rho_g.__doc__ += notes + notes_pot + notes_gamma
+rho_P_g.__doc__ += notes + notes_pot + notes_gamma
