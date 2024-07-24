@@ -1,4 +1,4 @@
-from jax import Array, lax
+from jax import Array
 import jax.numpy as jnp
 from typing import Tuple
 
@@ -42,12 +42,16 @@ def theta(phi: Array, theta_0: Array) -> Array:
     t = jnp.where(t >= 0, t, 0)
     return t
 
-def _Gamma_r_zero(r_norm, Gamma_0, c_Gamma):
-    return jnp.ones_like(r_norm) * Gamma_0
+
 def _Gamma_r_pos(r_norm, Gamma_0, c_Gamma):
     return 1 + (Gamma_0 - 1) * (1 / (1 + jnp.exp(-r_norm / c_Gamma)))
+
+
 def _Gamma_r_neg(r_norm, Gamma_0, c_Gamma):
-    return Gamma_0 + (Gamma_0 - 1) * (1 - (1 / (1 + jnp.exp(r_norm / c_Gamma))))
+    return Gamma_0 + (Gamma_0 - 1) * (
+        1 - (1 / (1 + jnp.exp(r_norm / c_Gamma)))
+    )
+
 
 def Gamma_r(r_norm: Array, Gamma_0: Array, c_Gamma: Array):
     """
@@ -67,12 +71,13 @@ def Gamma_r(r_norm: Array, Gamma_0: Array, c_Gamma: Array):
     Array
         Gamma values at specified radii
     """
-    # Note that jnp.where cannot be used here because c_Gamma == 0 can
-    # create a NaN in one of the branches, which would propagate through
-    # gradients even if not called; see jax.numpy.where documentation.
+    # Note that jnp.where or jax.lax.select cannot be used naively here
+    # because # c_Gamma == 0 can create NaNs in one of the branches,
+    # which would propagate to the *gradients* even if not called;
+    # see jax.numpy.where documentation.
 
     # Gamma_0 everywhere
-    g = _Gamma_r_zero(r_norm, Gamma_0, c_Gamma)
+    g = jnp.ones_like(r_norm) * Gamma_0
     # Gamma_r where c_Gamma > 0, rubbish elsewhere
     gp = _Gamma_r_pos(r_norm, Gamma_0, jnp.where(c_Gamma > 0, c_Gamma, 1.0))
     # Gamma_r where c_Gamma < 0, rubbish elsewhere
