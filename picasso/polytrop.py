@@ -1,4 +1,4 @@
-from jax import Array
+from jax import Array, lax
 import jax.numpy as jnp
 from typing import Tuple
 
@@ -42,18 +42,23 @@ def theta(phi: Array, theta_0: Array) -> Array:
     t = jnp.where(t >= 0, t, 0)
     return t
 
+def _Gamma_r_zero(r_norm, Gamma_0, c_Gamma):
+    return jnp.ones_like(r_norm) * Gamma_0
+def _Gamma_r_pos(r_norm, Gamma_0, c_Gamma):
+    return 1 + (Gamma_0 - 1) * (1 / (1 + jnp.exp(-r_norm / c_Gamma)))
+def _Gamma_r_neg(r_norm, Gamma_0, c_Gamma):
+    return Gamma_0 + (Gamma_0 - 1) * (1 - (1 / (1 + jnp.exp(r_norm / c_Gamma))))
 
 def Gamma_r(r_norm: Array, Gamma_0: Array, c_Gamma: Array):
     """
-    Compute the radius-dependent polytropic index Gamma(r), following
-    Komatsu & Seljak (2001).
+    Compute the radius-dependent polytropic index Gamma(r)
 
     Parameters
     ----------
     r_norm : Array
         Normalized radii
     Gamma_0 : Array
-        Central value of the polytropic index
+        Asymptotic outer value of the polytropic index
     c_Gamma : Array
         Polytropic concentration value
 
@@ -62,10 +67,21 @@ def Gamma_r(r_norm: Array, Gamma_0: Array, c_Gamma: Array):
     Array
         Gamma values at specified radii
     """
-    x = c_Gamma * r_norm
-    return Gamma_0 + ((x + 1) * jnp.log(x + 1) - x) / (
-        (3 * x + 1) * jnp.log(x + 1)
-    )
+    # Note that jnp.where cannot be used here because c_Gamma == 0 can
+    # create a NaN in one of the branches, which would propagate through
+    # gradients even if not called; see jax.numpy.where documentation.
+
+    # Gamma_0 everywhere
+    g = _Gamma_r_zero(r_norm, Gamma_0, c_Gamma)
+    # Gamma_r where c_Gamma > 0, rubbish elsewhere
+    gp = _Gamma_r_pos(r_norm, Gamma_0, jnp.where(c_Gamma > 0, c_Gamma, 1.0))
+    # Gamma_r where c_Gamma < 0, rubbish elsewhere
+    gn = _Gamma_r_neg(r_norm, Gamma_0, jnp.where(c_Gamma < 0, c_Gamma, -1.0))
+
+    g = jnp.where(c_Gamma > 0, gp, g)
+    g = jnp.where(c_Gamma < 0, gn, g)
+
+    return g
 
 
 def P_g(
