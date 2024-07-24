@@ -1,23 +1,12 @@
 import jax
 import jax.numpy as jnp
 import flax.linen as nn
-import jax.scipy.stats as jss
-import pickle
 import os
 
 from jax import Array
 from typing import Sequence, Callable, Iterable
-from functools import partial
 
 from . import polytrop, nonthermal
-
-
-def soft_clip(x, a, b, c=1.0):
-    return (
-        x
-        - jnp.log(1 + jnp.exp(c * (x - b))) / c
-        + jnp.log(1 + jnp.exp(-c * (x - a))) / c
-    )
 
 
 possible_activations = {
@@ -26,31 +15,8 @@ possible_activations = {
     "tanh": nn.tanh,
     "sigmoid": nn.sigmoid,
     "clip": jnp.clip,
-    "soft_clip": soft_clip,
     "linear": lambda x: x,
 }
-
-
-def transform_minmax(x: Array, mins: Array, maxs: Array):
-    return (x - mins) / (maxs - mins)
-
-
-def inv_transform_minmax(x: Array, mins: Array, maxs: Array):
-    return x * (maxs - mins) + mins
-
-
-def transform_y(y: Array):
-    y_trans = 10**y
-    y_trans = y_trans.at[..., 2].add(1.0)
-    y_trans = y_trans.at[..., 3].multiply(1e-6)
-    return y_trans
-
-
-def quantile_normalization(x: Array, dist=jss.norm):
-    ranks = jnp.argsort(x, axis=0)
-    sorted_ranks = jnp.argsort(ranks, axis=0)
-    normalized = dist.ppf((sorted_ranks + 0.5) / x.shape[0])
-    return normalized
 
 
 class FlaxRegMLP(nn.Module):
@@ -74,16 +40,16 @@ class FlaxRegMLP(nn.Module):
         return x
 
 
-def _gas_par2gas_props_broken_plaw(gas_par, phi_tot, r_R500):
-    rho_g, P_tot = polytrop.rho_P_g(phi_tot, *gas_par[:4])
-    f_nth = nonthermal.f_nt_generic(r_R500, *gas_par[4:])
+def _gas_par2gas_props_broken_plaw(gas_par, phi_tot, r_pol, r_fnt):
+    rho_g, P_tot = polytrop.rho_P_g(phi_tot, r_pol, *gas_par[:5])
+    f_nth = nonthermal.f_nt_generic(r_fnt, *gas_par[5:])
     P_th = P_tot * (1 - f_nth)
     return jnp.array([rho_g, P_tot, P_th, f_nth])
 
 
-def _gas_par2gas_props_nelson(gas_par, phi_tot, r_R500):
-    rho_g, P_tot = polytrop.rho_P_g(phi_tot, *gas_par[:4])
-    f_nth = nonthermal.f_nt_nelson14(r_R500, *gas_par[4:])
+def _gas_par2gas_props_nelson(gas_par, phi_tot, r_pol, r_fnt):
+    rho_g, P_tot = polytrop.rho_P_g(phi_tot, r_pol, *gas_par[:5])
+    f_nth = nonthermal.f_nt_nelson14(r_fnt, *gas_par[5:])
     P_th = P_tot * (1 - f_nth)
     return jnp.array([rho_g, P_tot, P_th, f_nth])
 
@@ -104,23 +70,24 @@ class PicassoPredictor:
         transfom_x: Callable = lambda x: x,
         transfom_y: Callable = lambda y: y,
         fix_params: dict = {},
-        f_nt_model: str = "nelson14",
+        f_nt_model: str = "broken_plaw",
     ):
         self.mlp = mlp
         self._transfom_x = transfom_x
         self._transfom_y = transfom_y
+        self.param_indices = {
+            "rho_0": 0,
+            "P_0": 1,
+            "Gamma_0": 2,
+            "c_Gamma": 3,
+            "theta_0": 4,
+            "A_nt": 5,
+            "B_nt": 6,
+            "C_nt": 7,
+        }
         self.fix_params = {}
         for k, v in fix_params.items():
-            i = {
-                "rho0": 0,
-                "P0": 1,
-                "Gamma": 2,
-                "theta0": 3,
-                "Ant": 4,
-                "Bnt": 5,
-                "Cnt": 6,
-            }[k]
-            self.fix_params[i] = jnp.array(v)
+            self.fix_params[self.param_indices[k]] = jnp.array(v)
         self._gas_par2gas_props = _gas_par2gas_props[f_nt_model]
         self._gas_par2gas_props_v = _gas_par2gas_props_v[f_nt_model]
 
@@ -128,9 +95,15 @@ class PicassoPredictor:
         return self._transfom_x(x)
 
     def transfom_y(self, y: Array) -> Array:
+        # First make the output the right shape to be able to apply the
+        # y scaling regardless of fixed parameters
+        for k in self.fix_params.keys():
+            y = jnp.insert(y, k, 0.0, axis=-1)
+        # Apply the y scaling
         y_out = self._transfom_y(y)
+        # Fix parameters that need to be fixed
         for k, v in self.fix_params.items():
-            y_out = jnp.insert(y_out, k, v, axis=-1)
+            y_out = y_out.at[..., k].set(v)
         return y_out
 
     def predict_model_parameters(self, x: Array, net_par: dict) -> Array:
@@ -153,7 +126,7 @@ class PicassoPredictor:
         return self.transfom_y(y_)
 
     def predict_gas_model(
-        self, x: Array, phi: Array, r_R500: Array, net_par: dict
+        self, x: Array, phi: Array, r_pol: Array, r_fnt: Array, net_par: dict
     ) -> Sequence[Array]:
         """
         Predicts the gas properties from halo properties ant potential
@@ -165,8 +138,11 @@ class PicassoPredictor:
             Halo properties.
         phi : Array
             Potential values.
-        r_R500 : Array
-            Radii in units of R500c.
+        r_pol : Array
+            Normalized radii to be used for the polytropic model.
+        r_fnt : Array
+            Normalized radii to be used for the non-thermal pressure
+            fraction model.
 
         Returns
         -------
@@ -186,11 +162,11 @@ class PicassoPredictor:
         gas_par = self.predict_model_parameters(x, net_par)
         if len(gas_par.shape) == 1:
             rho_g, P_tot, P_th, f_nth = self._gas_par2gas_props(
-                gas_par, phi, r_R500
+                gas_par, phi, r_pol, r_fnt
             )
         else:
             rho_g, P_tot, P_th, f_nth = self._gas_par2gas_props_v(
-                gas_par, phi, r_R500
+                gas_par, phi, r_pol, r_fnt
             )
         return (rho_g, P_tot, P_th, f_nth)
 
@@ -209,9 +185,9 @@ class PicassoTrainedPredictor(PicassoPredictor):
         self.net_par = net_par
 
     def predict_gas_model(
-        self, x: Array, phi: Array, r_R500: Array, *args
+        self, x: Array, phi: Array, r_pol: Array, r_fnt: Array, *args
     ) -> Sequence[Array]:
-        return super().predict_gas_model(x, phi, r_R500, self.net_par)
+        return super().predict_gas_model(x, phi, r_pol, r_fnt, self.net_par)
 
     def predict_model_parameters(self, x: Array, *args) -> Array:
         return super().predict_model_parameters(x, self.net_par)
@@ -272,31 +248,34 @@ def draw_mlp(mlp: FlaxRegMLP, colors=["k", "w"], alpha_line=1.0):
 _here = os.path.dirname(os.path.abspath(__file__))
 
 
-def load_trained_net(pkl_file: str):
-    with open(f"{_here}/trained_networks/{pkl_file}", "rb") as f:
-        _params = pickle.load(f)
-    if not ("f_nt_model" in _params):
-        _params["f_nt_model"] = "nelson14"
-
-    return PicassoTrainedPredictor(
-        FlaxRegMLP(
-            _params["X_DIM"],
-            _params["Y_DIM"],
-            _params["hidden_features"],
-            _params["activations"],
-            _params["extra_args_output_activation"],
-        ),
-        _params["net_par"],
-        transfom_x=partial(
-            transform_minmax,
-            mins=_params["minmax_x"][0],
-            maxs=_params["minmax_x"][1],
-        ),
-        transfom_y=transform_y,
-        f_nt_model=_params["f_nt_model"],
-    )
-
-
-net12 = load_trained_net("net12.pkl")
-
-net1 = load_trained_net("net1.pkl")
+# import pickle
+# from functools import partial
+#
+# def load_trained_net(pkl_file: str):
+#     with open(f"{_here}/trained_networks/{pkl_file}", "rb") as f:
+#         _params = pickle.load(f)
+#     if not ("f_nt_model" in _params):
+#         _params["f_nt_model"] = "nelson14"
+#
+#     return PicassoTrainedPredictor(
+#         FlaxRegMLP(
+#             _params["X_DIM"],
+#             _params["Y_DIM"],
+#             _params["hidden_features"],
+#             _params["activations"],
+#             _params["extra_args_output_activation"],
+#         ),
+#         _params["net_par"],
+#         transfom_x=partial(
+#             transform_minmax,
+#             mins=_params["minmax_x"][0],
+#             maxs=_params["minmax_x"][1],
+#         ),
+#         transfom_y=transform_y,
+#         f_nt_model=_params["f_nt_model"],
+#     )
+#
+#
+# net12 = load_trained_net("net12.pkl")
+#
+# net1 = load_trained_net("net1.pkl")

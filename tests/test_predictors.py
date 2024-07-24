@@ -48,7 +48,7 @@ def test_picasso_predictor():
 
     # Define input and output dimensions
     X_DIM = 10
-    Y_DIM = 7
+    Y_DIM = 8
 
     # Create an instance of FlaxRegMLP
     mlp = predictors.FlaxRegMLP(
