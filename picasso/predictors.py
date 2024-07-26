@@ -65,6 +65,28 @@ _gas_par2gas_props_v = {
 
 
 class PicassoPredictor:
+    """
+    A wrapper class to predict picasso model parameters and gas
+    properties from an input halo properties vector and network
+    parameters.
+
+    Parameters
+    ----------
+    mlp : FlaxRegMLP
+        Predictor for model parameters from halo properties.
+    transfom_x : Callable, optional
+        Transformation to be applied to input vector,
+        by default lambda x: x
+    transfom_y : Callable, optional
+        Transformation to be applied to output vector,
+        by default lambda y: y
+    fix_params : dict, optional
+        List and values of parameters to be fixed, formatted as
+        {parameter name: fixed value}, by default {}
+    f_nt_model : str, optional
+        Non-thermal pressure fraction model to be used, one of
+        ["broken_plaw", "Nelson14"], by default "broken_plaw"
+    """
     def __init__(
         self,
         mlp: FlaxRegMLP,
@@ -115,6 +137,8 @@ class PicassoPredictor:
         ----------
         x : Array
             Halo properties.
+        net_par: dict
+            Parameters of the MLP to be used for the prediction.
 
         Returns
         -------
@@ -129,6 +153,153 @@ class PicassoPredictor:
     def predict_gas_model(
         self, x: Array, phi: Array, r_pol: Array, r_fnt: Array, net_par: dict
     ) -> Sequence[Array]:
+        """
+        Predicts the gas properties from halo properties ant potential
+        values.
+
+        Parameters
+        ----------
+        x : Array
+            Halo properties.
+        phi : Array
+            Potential values.
+        r_pol : Array
+            Normalized radii to be used for the polytropic model.
+        r_fnt : Array
+            Normalized radii to be used for the non-thermal pressure
+            fraction model.
+        net_par: dict
+            Parameters of the MLP to be used for the prediction.
+
+        Returns
+        -------
+        Sequence[Array]
+            A sequence of arrays containing the predicted gas model
+            parameters:
+
+            - rho_g : Array
+                The predicted gas density.
+            - P_tot : Array
+                The predicted total pressure.
+            - P_th : Array
+                The predicted thermal pressure.
+            - f_nth : Array
+                The predicted non-thermal pressure fraction.
+        """
+        gas_par = self.predict_model_parameters(x, net_par)
+        if len(gas_par.shape) == 1:
+            rho_g, P_tot, P_th, f_nth = self._gas_par2gas_props(
+                gas_par, phi, r_pol, r_fnt
+            )
+        else:
+            rho_g, P_tot, P_th, f_nth = self._gas_par2gas_props_v(
+                gas_par, phi, r_pol, r_fnt
+            )
+        return (rho_g, P_tot, P_th, f_nth)
+
+    def save(self, filename):
+        """
+        Serializes the object using `dill` and saves it to disk.
+
+        Parameters
+        ----------
+        filename : str
+            File to save the model to.
+        """
+        with open(filename, "wb") as f:
+            f.write(dill.dumps(self))
+
+    @classmethod
+    def load(cls, filename):
+        """
+        Reads a model object from disk using `dill`.
+
+        Parameters
+        ----------
+        filename : str
+            File to read the saved model from.
+
+        Returns
+        -------
+        PicassoPredictor
+            The saved model.
+        """
+        with open(filename, "rb") as f:
+            inst = dill.load(f)
+        return inst
+
+
+class PicassoTrainedPredictor(PicassoPredictor):
+    """
+    A wrapper class to predict picasso model parameters and gas
+    properties from an input halo properties vector, with a fixed set
+    of network parameters.
+
+    Parameters
+    ----------
+    net_par: dict
+        Parameters of the MLP to be used for the predictions.
+    mlp : FlaxRegMLP
+        Predictor for model parameters from halo properties.
+    transfom_x : Callable, optional
+        Transformation to be applied to input vector,
+        by default lambda x: x
+    transfom_y : Callable, optional
+        Transformation to be applied to output vector,
+        by default lambda y: y
+    fix_params : dict, optional
+        List and values of parameters to be fixed, formatted as
+        {parameter name: fixed value}, by default {}
+    f_nt_model : str, optional
+        Non-thermal pressure fraction model to be used, one of
+        ["broken_plaw", "Nelson14"], by default "broken_plaw"
+    """
+    def __init__(self, net_par: dict, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.net_par = net_par
+
+    @classmethod
+    def from_predictor(cls, predictor: PicassoPredictor, net_par: dict):
+        """
+        Instantiate a trained predictor from an untrained predictor and
+        network parameters.
+
+        Parameters
+        ----------
+        predictor : PicassoPredictor
+            Untrained predictor.
+        net_par : dict
+            Trained network parameters.
+
+        Returns
+        -------
+        PicassoTrainedPredictor
+            The predictor with pre-trained parameters.
+        """
+        trained_predictor = cls.__new__(cls)
+        trained_predictor.__dict__.update(predictor.__dict__)
+        trained_predictor.net_par = net_par
+        return trained_predictor
+
+    def predict_gas_model(
+        self, x: Array, phi: Array, r_pol: Array, r_fnt: Array, *args
+    ) -> Sequence[Array]:
+        """
+        Predicts the gas model parameters based on halo properties.
+
+        Parameters
+        ----------
+        x : Array
+            Halo properties.
+
+        Returns
+        -------
+        Array
+            Gas model parameters.
+        """
+        return super().predict_gas_model(x, phi, r_pol, r_fnt, self.net_par)
+
+    def predict_model_parameters(self, x: Array, *args) -> Array:
         """
         Predicts the gas properties from halo properties ant potential
         values.
@@ -160,46 +331,6 @@ class PicassoPredictor:
             - f_nth : Array
                 The predicted non-thermal pressure fraction.
         """
-        gas_par = self.predict_model_parameters(x, net_par)
-        if len(gas_par.shape) == 1:
-            rho_g, P_tot, P_th, f_nth = self._gas_par2gas_props(
-                gas_par, phi, r_pol, r_fnt
-            )
-        else:
-            rho_g, P_tot, P_th, f_nth = self._gas_par2gas_props_v(
-                gas_par, phi, r_pol, r_fnt
-            )
-        return (rho_g, P_tot, P_th, f_nth)
-
-    def save(self, filename):
-        with open(filename, "wb") as f:
-            f.write(dill.dumps(self))
-
-    @classmethod
-    def load(cls, filename):
-        with open(filename, "rb") as f:
-            inst = dill.load(f)
-        return inst
-
-
-class PicassoTrainedPredictor(PicassoPredictor):
-    def __init__(self, net_par, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.net_par = net_par
-
-    @classmethod
-    def from_predictor(cls, predictor, net_par):
-        trained_predictor = cls.__new__(cls)
-        trained_predictor.__dict__.update(predictor.__dict__)
-        trained_predictor.net_par = net_par
-        return trained_predictor
-
-    def predict_gas_model(
-        self, x: Array, phi: Array, r_pol: Array, r_fnt: Array, *args
-    ) -> Sequence[Array]:
-        return super().predict_gas_model(x, phi, r_pol, r_fnt, self.net_par)
-
-    def predict_model_parameters(self, x: Array, *args) -> Array:
         return super().predict_model_parameters(x, self.net_par)
 
 
