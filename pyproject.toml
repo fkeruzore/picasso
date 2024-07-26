@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "picasso"
-version = "0.3.0"
+version = "0.4.0"
 description = ""
 authors = ["Florian Keruzore <florian.keruzore@gmail.com>"]
 readme = "README.md"
