@@ -1,7 +1,8 @@
 import jax
 import jax.numpy as jnp
-from picasso import predictors
+from picasso import predictors, utils
 import pickle
+from functools import partial
 import os
 import pytest
 
@@ -39,6 +40,49 @@ def test_flax_reg_mlp():
 
     # Check output values are within valid range
     assert jnp.all(y >= 0.0) and jnp.all(y <= 1.0)
+
+
+@pytest.mark.parametrize("transform", ["transforms", "no transforms"])
+def test_predictor_conversion_and_io(transform):
+    X_DIM, Y_DIM = 12, 8
+    mlp = predictors.FlaxRegMLP(X_DIM, Y_DIM)
+    net_par = mlp.init(jax.random.PRNGKey(66), jnp.empty(X_DIM))
+
+    if transform:
+        minmax_x = jnp.array([jnp.zeros(X_DIM), jnp.ones(X_DIM)])
+        minmax_y = jnp.array([jnp.zeros(Y_DIM), jnp.ones(Y_DIM)])
+        transfom_x = partial(
+            utils.transform_minmax, mins=minmax_x[0], maxs=minmax_x[1]
+        )
+        transfom_y = partial(
+            utils.inv_transform_minmax, mins=minmax_y[0], maxs=minmax_y[1]
+        )
+    else:  # This violates Flake8(E731), but this is what I want to do
+        transform_x = lambda x: x  # noqa: E731, F841
+        transform_y = lambda y: y  # noqa: E731, F841
+
+    pred = predictors.PicassoPredictor(
+        mlp, transfom_x=transfom_x, transfom_y=transfom_y
+    )
+    x = jnp.ones(X_DIM)
+    y = pred.predict_model_parameters(x, net_par)
+
+    tpred = predictors.PicassoTrainedPredictor.from_predictor(pred, net_par)
+    y2 = tpred.predict_model_parameters(x)
+    assert jnp.allclose(y, y2), (
+        "Failed to recover same results when converting"
+        + "`PicassoPredictor` to `PicassoTrainedPredictor`"
+    )
+
+    tpred.save("./toto.pkl")
+    tpred_2 = predictors.PicassoTrainedPredictor.load("./toto.pkl")
+    y3 = tpred_2.predict_model_parameters(x)
+    assert jnp.allclose(y, y3), (
+        "Failed to recover same results after writing/loading"
+        + "`PicassoTrainedPredictor`"
+    )
+
+    os.remove("./toto.pkl")
 
 
 def test_picasso_predictor():
