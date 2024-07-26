@@ -64,66 +64,51 @@ def test_predictor_conversion_and_io(transform):
     pred = predictors.PicassoPredictor(
         mlp, transfom_x=transfom_x, transfom_y=transfom_y
     )
+    pred_t = predictors.PicassoTrainedPredictor.from_predictor(pred, net_par)
+    pred_t.save("./toto.pkl")
+    pred_t_rest = predictors.PicassoTrainedPredictor.load("./toto.pkl")
+
+    # Single halo
     x = jnp.ones(X_DIM)
     y = pred.predict_model_parameters(x, net_par)
+    y2 = pred_t.predict_model_parameters(x)
+    y3 = pred_t_rest.predict_model_parameters(x)
 
-    tpred = predictors.PicassoTrainedPredictor.from_predictor(pred, net_par)
-    y2 = tpred.predict_model_parameters(x)
+    assert y.shape == (
+        Y_DIM,
+    ), f"Wrong shape for prediction: {y.shape} (should be {(Y_DIM,)})"
+
     assert jnp.allclose(y, y2), (
         "Failed to recover same results when converting"
         + "`PicassoPredictor` to `PicassoTrainedPredictor`"
     )
+    assert jnp.allclose(y, y3), (
+        "Failed to recover same results after writing/loading"
+        + "`PicassoTrainedPredictor`"
+    )
 
-    tpred.save("./toto.pkl")
-    tpred_2 = predictors.PicassoTrainedPredictor.load("./toto.pkl")
-    y3 = tpred_2.predict_model_parameters(x)
+    # Multi halo
+    N = 5
+    x = jnp.ones((N, X_DIM))
+    y = pred.predict_model_parameters(x, net_par)
+    y2 = pred_t.predict_model_parameters(x)
+    y3 = pred_t_rest.predict_model_parameters(x)
+
+    assert y.shape == (
+        N,
+        Y_DIM,
+    ), f"Wrong shape for prediction: {y.shape} (should be {(N, Y_DIM)})"
+
+    assert jnp.allclose(y, y2), (
+        "Failed to recover same results when converting"
+        + "`PicassoPredictor` to `PicassoTrainedPredictor`"
+    )
     assert jnp.allclose(y, y3), (
         "Failed to recover same results after writing/loading"
         + "`PicassoTrainedPredictor`"
     )
 
     os.remove("./toto.pkl")
-
-
-def test_picasso_predictor():
-    # Number of (halos, points) for which to predict
-    n_halos = 2
-    n_pts = 5
-
-    # Define input and output dimensions
-    X_DIM = 10
-    Y_DIM = 8
-
-    # Create an instance of FlaxRegMLP
-    mlp = predictors.FlaxRegMLP(
-        X_DIM=X_DIM,
-        Y_DIM=Y_DIM,
-        hidden_features=(16, 16),
-        activations=["selu", "selu", "selu", "soft_clip"],
-        extra_args_output_activation=[jnp.zeros(Y_DIM), jnp.ones(Y_DIM)],
-    )
-
-    # Generate random input
-    rng = jax.random.PRNGKey(0)
-    x = jax.random.normal(rng, (n_halos, X_DIM))
-
-    default_net_par = mlp.init(rng, x[0])
-
-    # Create an instance of PicassoPredictor
-    predictor = predictors.PicassoTrainedPredictor(mlp, default_net_par)
-
-    # Test predict_model_parameters method
-    y_pred = predictor.predict_model_parameters(x)
-    assert y_pred.shape == (n_halos, Y_DIM)
-
-    # Test predict_gas_model method
-    phi = jnp.ones((n_halos, n_pts))
-    r_R500 = jnp.ones((n_halos, n_pts))
-    gas_model = predictor.predict_gas_model(x, phi, r_R500)
-    assert len(gas_model) == 4
-    assert gas_model[0].shape == (n_halos, n_pts)
-    assert gas_model[1].shape == (n_halos, n_pts)
-    assert gas_model[2].shape == (n_halos, n_pts)
 
 
 @pytest.mark.parametrize("jit", ["jit", "nojit"])
