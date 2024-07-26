@@ -2,6 +2,7 @@ import jax
 import jax.numpy as jnp
 import flax.linen as nn
 import os
+import dill
 
 from jax import Array
 from typing import Sequence, Callable, Iterable
@@ -170,19 +171,28 @@ class PicassoPredictor:
             )
         return (rho_g, P_tot, P_th, f_nth)
 
+    def save(self, filename):
+        with open(filename, "wb") as f:
+            f.write(dill.dumps(self))
+
+    @classmethod
+    def load(cls, filename):
+        with open(filename, "rb") as f:
+            inst = dill.load(f)
+        return inst
+
 
 class PicassoTrainedPredictor(PicassoPredictor):
-    def __init__(
-        self,
-        mlp: FlaxRegMLP,
-        net_par: dict,
-        transfom_x: Callable = lambda x: x,
-        transfom_y: Callable = lambda y: y,
-        fix_params: dict = {},
-        f_nt_model: str = "nelson14",
-    ):
-        super().__init__(mlp, transfom_x, transfom_y, fix_params, f_nt_model)
+    def __init__(self, net_par, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.net_par = net_par
+
+    @classmethod
+    def from_predictor(cls, predictor, net_par):
+        trained_predictor = cls.__new__(cls)
+        trained_predictor.__dict__.update(predictor.__dict__)
+        trained_predictor.net_par = net_par
+        return trained_predictor
 
     def predict_gas_model(
         self, x: Array, phi: Array, r_pol: Array, r_fnt: Array, *args
@@ -246,36 +256,3 @@ def draw_mlp(mlp: FlaxRegMLP, colors=["k", "w"], alpha_line=1.0):
 
 
 _here = os.path.dirname(os.path.abspath(__file__))
-
-
-# import pickle
-# from functools import partial
-#
-# def load_trained_net(pkl_file: str):
-#     with open(f"{_here}/trained_networks/{pkl_file}", "rb") as f:
-#         _params = pickle.load(f)
-#     if not ("f_nt_model" in _params):
-#         _params["f_nt_model"] = "nelson14"
-#
-#     return PicassoTrainedPredictor(
-#         FlaxRegMLP(
-#             _params["X_DIM"],
-#             _params["Y_DIM"],
-#             _params["hidden_features"],
-#             _params["activations"],
-#             _params["extra_args_output_activation"],
-#         ),
-#         _params["net_par"],
-#         transfom_x=partial(
-#             transform_minmax,
-#             mins=_params["minmax_x"][0],
-#             maxs=_params["minmax_x"][1],
-#         ),
-#         transfom_y=transform_y,
-#         f_nt_model=_params["f_nt_model"],
-#     )
-#
-#
-# net12 = load_trained_net("net12.pkl")
-#
-# net1 = load_trained_net("net1.pkl")
