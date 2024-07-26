@@ -22,8 +22,7 @@ def test_flax_reg_mlp():
         X_DIM=X_DIM,
         Y_DIM=Y_DIM,
         hidden_features=(16, 16),
-        activations=["selu", "selu", "selu", "soft_clip"],
-        extra_args_output_activation=[jnp.zeros(Y_DIM), jnp.ones(Y_DIM)],
+        activations=["selu", "selu", "selu", "sigmoid"],
     )
 
     # Generate random input
