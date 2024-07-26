@@ -113,27 +113,33 @@ def test_predictor_conversion_and_io(transform):
 
 @pytest.mark.parametrize("jit", ["jit", "nojit"])
 def test_predict_model_params_pretrained(jit, benchmark):
-
-    predict_func = predictors.net1.predict_model_parameters
+    predictor = predictors.PicassoTrainedPredictor.load(
+        f"{path}/untrained_predictor.pkl"
+    )
+    predict_func = predictor.predict_model_parameters
     if jit == "jit":  # jit the function and call it once to compile
         predict_func = jax.jit(predict_func)
         _ = predict_func(data_predictor["x"][0])
 
     # benchmark function (jitted or not)
     y_pred = benchmark(predict_func, data_predictor["x"])
-    assert y_pred.shape == (data_predictor["x"].shape[0], 7)
+    assert y_pred.shape == (data_predictor["x"].shape[0], 8)
     assert jnp.all(jnp.isfinite(y_pred))
 
 
 @pytest.mark.parametrize("jit", ["jit", "nojit"])
 def test_predict_gas_properties_pretrained(jit, benchmark):
-    predict_func = predictors.net1.predict_gas_model
+    predictor = predictors.PicassoTrainedPredictor.load(
+        f"{path}/untrained_predictor.pkl"
+    )
+    predict_func = predictor.predict_gas_model
     if jit == "jit":  # jit the function and call it once to compile
         predict_func = jax.jit(predict_func)
         _ = predict_func(
             data_predictor["x"][0],
             data_predictor["phi"][0],
             data_predictor["r_R500"][0],
+            data_predictor["r_R500"][0] / 2,
         )
 
     # benchmark function (jitted or not)
@@ -142,6 +148,7 @@ def test_predict_gas_properties_pretrained(jit, benchmark):
         data_predictor["x"],
         data_predictor["phi"],
         data_predictor["r_R500"],
+        data_predictor["r_R500"] / 2,
     )
     profs_pred = jnp.array(profs_pred)
     assert profs_pred.shape == (
