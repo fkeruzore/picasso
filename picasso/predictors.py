@@ -86,7 +86,14 @@ class PicassoPredictor:
     f_nt_model : str, optional
         Non-thermal pressure fraction model to be used, one of
         ["broken_plaw", "Nelson14"], by default "broken_plaw"
+    input_params : list[str], optional
+        The names of input parameters. This is never used, only stored
+        to be accessed by one to remind oneself of what the inputs are,
+        bu default the inputs of the baseline model
+    name : str, optional
+        A name for the model, by default "model"
     """
+
     def __init__(
         self,
         mlp: FlaxRegMLP,
@@ -94,10 +101,27 @@ class PicassoPredictor:
         transfom_y: Callable = lambda y: y,
         fix_params: dict = {},
         f_nt_model: str = "broken_plaw",
+        input_names: Iterable[str] = [
+            "log M200",
+            "c200",
+            "cacc/c200",
+            "cpeak/c200",
+            "log dx/R200c",
+            "e",
+            "p",
+            "a25",
+            "a50",
+            "a75",
+            "almm",
+            "mdot",
+        ],
+        name="model",
     ):
         self.mlp = mlp
         self._transfom_x = transfom_x
         self._transfom_y = transfom_y
+        self.name = name
+        self.input_names = input_names
         self.param_indices = {
             "rho_0": 0,
             "P_0": 1,
@@ -254,6 +278,7 @@ class PicassoTrainedPredictor(PicassoPredictor):
         Non-thermal pressure fraction model to be used, one of
         ["broken_plaw", "Nelson14"], by default "broken_plaw"
     """
+
     def __init__(self, net_par: dict, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.net_par = net_par
