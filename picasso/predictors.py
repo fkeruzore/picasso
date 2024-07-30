@@ -415,6 +415,7 @@ _path = f"{os.path.dirname(os.path.abspath(__file__))}/trained_models"
 _load = PicassoTrainedPredictor.load
 
 baseline_576 = _load(f"{_path}/576/baseline.pkl")
+compact_576 = _load(f"{_path}/576/compact.pkl")
 minimal_576 = _load(f"{_path}/576/minimal.pkl")
 subgrid_576 = _load(f"{_path}/576/subgrid.pkl")
 adiabatic_Gamma_r_576 = _load(f"{_path}/576/adiabatic_Gamma_r.pkl")
