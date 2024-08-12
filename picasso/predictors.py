@@ -29,18 +29,18 @@ class FlaxRegMLP(nn.Module):
 
     Parameters
     ----------
-    X_DIM: int
+    X_DIM : int
         Number of features on the input layer.
-    Y_DIM: int
+    Y_DIM : int
         Number of features on the output layer.
-    hidden_features: Sequence[int]
+    hidden_features : Sequence[int]
         Number of features for each hidden layer, defaults to [16, 16].
-    activations: Sequence[str]
+    activations : Sequence[str]
         Name of the activation functions to be used for each layer,
         including input and output. Accepted names are ["selu", "relu",
         "tanh", "sigmoid", "clip", "linear]. Defaults to ["selu",
         "selu", "selu", "linear"].
-    extra_args_output_activation: Iterable
+    extra_args_output_activation : Iterable
         Extra arguments to be passed to the output activation function,
         defaults to ().
 
@@ -102,10 +102,10 @@ class PicassoPredictor:
     ----------
     mlp : FlaxRegMLP
         Predictor for model parameters from halo properties.
-    transfom_x : Callable, optional
+    transform_x : Callable, optional
         Transformation to be applied to input vector,
         by default lambda x: x
-    transfom_y : Callable, optional
+    transform_y : Callable, optional
         Transformation to be applied to output vector,
         by default lambda y: y
     fix_params : dict, optional
@@ -114,7 +114,7 @@ class PicassoPredictor:
     f_nt_model : str, optional
         Non-thermal pressure fraction model to be used, one of
         ["broken_plaw", "Nelson14"], by default "broken_plaw"
-    input_params : list[str], optional
+    input_names : list[str], optional
         The names of input parameters. This is never used, only stored
         to be accessed by one to remind oneself of what the inputs are,
         bu default the inputs of the baseline model
@@ -125,8 +125,8 @@ class PicassoPredictor:
     def __init__(
         self,
         mlp: FlaxRegMLP,
-        transfom_x: Callable = lambda x: x,
-        transfom_y: Callable = lambda y: y,
+        transform_x: Callable = lambda x: x,
+        transform_y: Callable = lambda y: y,
         fix_params: dict = {},
         f_nt_model: str = "broken_plaw",
         input_names: Iterable[str] = [
@@ -146,8 +146,8 @@ class PicassoPredictor:
         name="model",
     ):
         self.mlp = mlp
-        self._transfom_x = transfom_x
-        self._transfom_y = transfom_y
+        self._transform_x = transform_x
+        self._transform_y = transform_y
         self.name = name
         self.input_names = input_names
         self.param_indices = {
@@ -166,16 +166,16 @@ class PicassoPredictor:
         self._gas_par2gas_props = _gas_par2gas_props[f_nt_model]
         self._gas_par2gas_props_v = _gas_par2gas_props_v[f_nt_model]
 
-    def transfom_x(self, x: Array) -> Array:
-        return self._transfom_x(x)
+    def transform_x(self, x: Array) -> Array:
+        return self._transform_x(x)
 
-    def transfom_y(self, y: Array) -> Array:
+    def transform_y(self, y: Array) -> Array:
         # First make the output the right shape to be able to apply the
         # y scaling regardless of fixed parameters
         for k in self.fix_params.keys():
             y = jnp.insert(y, k, 0.0, axis=-1)
         # Apply the y scaling
-        y_out = self._transfom_y(y)
+        y_out = self._transform_y(y)
         # Fix parameters that need to be fixed
         for k, v in self.fix_params.items():
             y_out = y_out.at[..., k].set(v)
@@ -198,9 +198,9 @@ class PicassoPredictor:
             Gas model parameters.
         """
 
-        x_ = self.transfom_x(x)
+        x_ = self.transform_x(x)
         y_ = self.mlp.apply(net_par, x_)
-        return self.transfom_y(y_)
+        return self.transform_y(y_)
 
     def predict_gas_model(
         self, x: Array, phi: Array, r_pol: Array, r_fnt: Array, net_par: dict
@@ -293,10 +293,10 @@ class PicassoTrainedPredictor(PicassoPredictor):
         Parameters of the MLP to be used for the predictions.
     mlp : FlaxRegMLP
         Predictor for model parameters from halo properties.
-    transfom_x : Callable, optional
+    transform_x : Callable, optional
         Transformation to be applied to input vector,
         by default lambda x: x
-    transfom_y : Callable, optional
+    transform_y : Callable, optional
         Transformation to be applied to output vector,
         by default lambda y: y
     fix_params : dict, optional
