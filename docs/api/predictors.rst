@@ -9,6 +9,10 @@ predictors: From halo properties to gas properties
     PicassoTrainedPredictor
 
 
+FlaxRegMLP
+~~~~~~~~~~
+.. autoclass:: FlaxRegMLP
+
 PicassoPredictor
 ~~~~~~~~~~~~~~~~
 .. autoclass:: PicassoPredictor

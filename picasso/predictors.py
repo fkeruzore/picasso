@@ -21,6 +21,34 @@ possible_activations = {
 
 
 class FlaxRegMLP(nn.Module):
+    """
+    A wrapper class around `flax.linen.Module` to generate fully
+    connected multi-layer perceptrons, that can be instantiated easily
+    with list of strings and integers for the layer sizes and activation
+    functions.
+
+    Parameters
+    ----------
+    X_DIM: int
+        Number of features on the input layer.
+    Y_DIM: int
+        Number of features on the output layer.
+    hidden_features: Sequence[int]
+        Number of features for each hidden layer, defaults to [16, 16].
+    activations: Sequence[str]
+        Name of the activation functions to be used for each layer,
+        including input and output. Accepted names are ["selu", "relu",
+        "tanh", "sigmoid", "clip", "linear]. Defaults to ["selu",
+        "selu", "selu", "linear"].
+    extra_args_output_activation: Iterable
+        Extra arguments to be passed to the output activation function,
+        defaults to ().
+
+    See also
+    --------
+    :external+flax:doc:`flax.linen.Module <api_reference/flax.linen/module>`
+    """
+
     X_DIM: int
     Y_DIM: int
     hidden_features: Sequence[int] = (16, 16)

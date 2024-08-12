@@ -54,3 +54,12 @@ myst_enable_extensions = [
 nb_execution_mode = "force"
 nb_execution_allow_errors = False
 nb_render_image_options = {}
+
+# -- Intersphinx configuration -----------------------------------------------
+
+intersphinx_mapping = {
+    "jax": ("https://jax.readthedocs.io/en/latest/", None),
+    "flax": ("https://flax.readthedocs.io/en/latest/", None),
+}
+
+source_suffix = [".rst", ".md", ".ipynb"]
