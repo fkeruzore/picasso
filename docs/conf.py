@@ -40,3 +40,17 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 html_theme = "sphinx_book_theme"
 html_static_path = ["_static"]
 html_logo = "../images/logo_circle.png"
+html_theme_options = {
+    "show_toc_level": 2,
+    "repository_url": "https://github.com/fkeruzore/picasso",
+    "use_repository_button": True,  # add a "link to repository" button
+    "navigation_with_keys": False,
+}
+# -- Options for myst -------------------------------------------------------
+myst_enable_extensions = [
+    "amsmath",
+    "dollarmath",
+]
+nb_execution_mode = "force"
+nb_execution_allow_errors = False
+nb_render_image_options = {}
