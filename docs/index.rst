@@ -106,7 +106,6 @@ Learn more
    api/predictors
    api/polytrop
    api/nonthermal
-   api/utils
 
 Citation
 ^^^^^^^^
