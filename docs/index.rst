@@ -3,17 +3,104 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+*******
 picasso
-=======
+*******
+
+.. div:: sd-text-left sd-font-italic
+
+   Painting intracluster gas on gravity-only simulations
+
+----
+
+``picasso`` is a model that allows making predictions for the thermodynamic properties of the gas in massive dark matter halos from gravity-only cosmological simulations.
+It combines an analytical model of gas properties as a function of gravitational potential with a neural network predicting the parameters of said model.
+It is released here as a Python package, combining an implementation of the gas model based on `JAX <https://jax.readthedocs.io/en/latest/>`_ and `flax <https://flax.readthedocs.io/en/latest/index.html>`_, and models that have been pre-trained to reproduce gas properties from hydrodynamic simulations.
+
+
+Why use ``picasso``?
+^^^^^^^^^^^^^^^^^^^^
+
+.. grid::
+
+   .. grid-item::
+      :columns: 12 12 12 6
+
+      .. card:: Robustness
+         :class-card: sd-border-0
+         :shadow: none
+         :class-title: sd-fs-5
+
+         .. div:: sd-font-normal
+
+            By combining neural networks and physical models, ``picasso`` can make fast, accurate and precise predictions of intracluster gas thermodynamics.
+
+   .. grid-item::
+      :columns: 12 12 12 6
+
+      .. card:: JAX under the hood
+         :class-card: sd-border-0
+         :shadow: none
+         :class-title: sd-fs-5
+
+         .. div:: sd-font-normal
+
+            Thanks to the use of ``JAX`` and ``flax`` in its numerical implementation, ``picasso`` can make predictions that can be compiled just-in-time, accelerated on GPU/TPU, and automatically differentiable.
+
+   .. grid-item::
+      :columns: 12 12 12 6
+
+      .. card:: Flexibility
+         :class-card: sd-border-0
+         :shadow: none
+         :class-title: sd-fs-5
+
+         .. div:: sd-font-normal
+
+            ``picasso`` models can be trained to make predictions from extensive data inputs (*e.g.*, from the full N-body particle distribution of a dark matter halo) or from minimal information (*e.g.*, a halo catalog with only halo mass and concentration).
+
+   .. grid-item::
+      :columns: 12 12 12 6
+
+      .. card:: Trained models
+         :class-card: sd-border-0
+         :shadow: none
+         :class-title: sd-fs-5
+
+         .. div:: sd-font-normal
+
+            The ``picasso`` library includes pre-trained models that can reasily be used to make predictions from various inputs.
+
+----
+
+Installation
+^^^^^^^^^^^^
+
+``picasso`` uses ``poetry``:
+
+.. code-block:: bash
+
+   git clone git@github.com:fkeruzore/picasso.git
+   cd picasso
+   poetry install
+   # or, if you already have JAX and flax installed,
+   poetry install --without=jax
+
+The latter option will not install or upgrade any package relying on ``JAX``, which can be useful to avoid messing up an existing install.
+To install ``JAX`` on your system, see `JAX's installation page <https://github.com/google/jax#installation>`__.
+
+Learn more
+^^^^^^^^^^
 
 .. toctree::
    :maxdepth: 1
-   :caption: Contents
+   :caption: Example gallery
 
+   notebooks/make_predictions.ipynb
    notebooks/plot_model_params.ipynb
 
 .. toctree::
-   :caption: 📖 Reference
+   :caption: Reference
    :maxdepth: 1
 
    api/predictors
@@ -21,9 +108,27 @@ picasso
    api/nonthermal
    api/utils
 
+Citation
+^^^^^^^^
+
+If you use ``picasso`` for your research, please cite the ``picasso`` `original paper <https://arxiv.org/abs/2306.13807>`_:
+
+.. code-block:: bibtex
+
+   @article{keruzore_picasso_2024,
+      title={Optimization and Quality Assessment of Baryon Pasting for Intracluster Gas using the Borg Cube Simulation}, 
+      author={F. Kéruzoré and L. E. Bleem and M. Buehlmann and J. D. Emberson and N. Frontiere and S. Habib and K. Heitmann and P. Larsen},
+      year={2023},
+      eprint={2306.13807},
+      archivePrefix={arXiv},
+      primaryClass={astro-ph.CO},
+      doi={https://doi.org/10.21105/astro.2306.13807},
+      url={https://arxiv.org/abs/2306.13807}, 
+   }
+
 
 Indices and tables
-==================
+^^^^^^^^^^^^^^^^^^
 
 * :ref:`genindex`
 * :ref:`modindex`
