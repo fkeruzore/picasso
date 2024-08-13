@@ -338,22 +338,6 @@ class PicassoTrainedPredictor(PicassoPredictor):
         self, x: Array, phi: Array, r_pol: Array, r_fnt: Array, *args
     ) -> Sequence[Array]:
         """
-        Predicts the gas model parameters based on halo properties.
-
-        Parameters
-        ----------
-        x : Array
-            Halo properties.
-
-        Returns
-        -------
-        Array
-            Gas model parameters.
-        """
-        return super().predict_gas_model(x, phi, r_pol, r_fnt, self.net_par)
-
-    def predict_model_parameters(self, x: Array, *args) -> Array:
-        """
         Predicts the gas properties from halo properties ant potential
         values.
 
@@ -383,6 +367,22 @@ class PicassoTrainedPredictor(PicassoPredictor):
                 The predicted thermal pressure.
             - f_nth : Array
                 The predicted non-thermal pressure fraction.
+        """
+        return super().predict_gas_model(x, phi, r_pol, r_fnt, self.net_par)
+
+    def predict_model_parameters(self, x: Array, *args) -> Array:
+        """
+        Predicts the gas model parameters based on halo properties.
+
+        Parameters
+        ----------
+        x : Array
+            Halo properties.
+
+        Returns
+        -------
+        Array
+            Gas model parameters.
         """
         return super().predict_model_parameters(x, self.net_par)
 
