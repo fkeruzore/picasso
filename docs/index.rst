@@ -101,7 +101,7 @@ Learn more
    :caption: Example gallery
 
    notebooks/make_predictions.ipynb
-   notebooks/plot_model_params.ipynb
+   notebooks/demo_model.ipynb
 
 .. toctree::
    :caption: Reference
@@ -110,6 +110,7 @@ Learn more
    api/predictors
    api/polytrop
    api/nonthermal
+   notebooks/plot_model_params.ipynb
 
 ----
 

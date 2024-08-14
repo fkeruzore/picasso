@@ -62,4 +62,8 @@ intersphinx_mapping = {
     "flax": ("https://flax.readthedocs.io/en/latest/", None),
 }
 
-source_suffix = [".rst", ".md", ".ipynb"]
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".ipynb": "myst-nb",
+    ".myst": "myst-nb",
+}
