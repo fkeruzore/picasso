@@ -18,8 +18,10 @@ It combines an analytical model of gas properties as a function of gravitational
 It is released here as a Python package, combining an implementation of the gas model based on `JAX <https://jax.readthedocs.io/en/latest/>`_ and `flax <https://flax.readthedocs.io/en/latest/index.html>`_, and models that have been pre-trained to reproduce gas properties from hydrodynamic simulations.
 
 
-Why use ``picasso``?
-^^^^^^^^^^^^^^^^^^^^
+Why use picasso?
+^^^^^^^^^^^^^^^^
+
+``picasso`` presents a few advantages that make it particularly interesting to predict gas properties from gravity-only halos:
 
 .. grid::
 
@@ -89,6 +91,8 @@ Installation
 The latter option will not install or upgrade any package relying on ``JAX``, which can be useful to avoid messing up an existing install.
 To install ``JAX`` on your system, see `JAX's installation page <https://github.com/google/jax#installation>`__.
 
+----
+
 Learn more
 ^^^^^^^^^^
 
@@ -106,6 +110,8 @@ Learn more
    api/predictors
    api/polytrop
    api/nonthermal
+
+----
 
 Citation
 ^^^^^^^^
@@ -125,6 +131,7 @@ If you use ``picasso`` for your research, please cite the ``picasso`` `original 
       url={https://arxiv.org/abs/2306.13807}, 
    }
 
+----
 
 Indices and tables
 ^^^^^^^^^^^^^^^^^^
