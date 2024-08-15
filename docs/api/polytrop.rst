@@ -1,5 +1,5 @@
-polytrop: Polytropic gas model
-==============================
+``picasso.polytrop``: Polytropic gas model
+==========================================
 
 .. currentmodule:: picasso.polytrop
 

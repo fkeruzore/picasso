@@ -1,5 +1,5 @@
-nonthermal: Non-thermal pressure support
-========================================
+``picasso.nonthermal``: Non-thermal pressure support
+====================================================
 
 .. currentmodule:: picasso.nonthermal
 

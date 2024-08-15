@@ -1,5 +1,5 @@
-predictors: From halo properties to gas properties
-==================================================
+``picasso.predictors``: From halo properties to gas properties
+==============================================================
 
 .. currentmodule:: picasso.predictors
 
