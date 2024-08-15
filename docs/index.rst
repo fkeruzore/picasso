@@ -98,6 +98,14 @@ Learn more
 
 .. toctree::
    :maxdepth: 1
+   :caption: The picasso model
+
+   model/model
+   model/trained_models
+   notebooks/plot_model_params.ipynb
+
+.. toctree::
+   :maxdepth: 1
    :caption: Example gallery
 
    notebooks/make_predictions.ipynb
@@ -110,7 +118,6 @@ Learn more
    api/predictors
    api/polytrop
    api/nonthermal
-   notebooks/plot_model_params.ipynb
 
 ----
 
