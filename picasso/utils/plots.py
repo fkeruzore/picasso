@@ -79,7 +79,9 @@ class NFW:
         return prefact * jnp.log(1 + r / self.Rs) / r
 
 
-def plot_impact_model_params(n_curves: int, cmapname: str):
+def plot_impact_model_params(
+    n_curves: int, cmapname: str, force_central_color=None
+):
     param_names = [
         "rho_0",
         "P_0",
@@ -197,7 +199,11 @@ def plot_impact_model_params(n_curves: int, cmapname: str):
                             r_R500c,
                             fixed_props[i_prop],
                             "--",
-                            color=plt.get_cmap(cmapname)(0.5),
+                            color=(
+                                force_central_color
+                                if force_central_color is not None
+                                else plt.get_cmap(cmapname)(0.5)
+                            ),
                         )
 
         cb = fig.colorbar(
