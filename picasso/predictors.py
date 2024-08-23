@@ -442,9 +442,11 @@ def draw_mlp(mlp: FlaxRegMLP, colors=["k", "w"], alpha_line=1.0):
 _path = f"{os.path.dirname(os.path.abspath(__file__))}/trained_models"
 _load = PicassoTrainedPredictor.load
 
-baseline_576 = _load(f"{_path}/576/baseline.pkl")
-compact_576 = _load(f"{_path}/576/compact.pkl")
-minimal_576 = _load(f"{_path}/576/minimal.pkl")
-subgrid_576 = _load(f"{_path}/576/subgrid.pkl")
-nonradiative_Gamma_r_576 = _load(f"{_path}/576/nonradiative_Gamma_r.pkl")
-subgrid_Gamma_r_576 = _load(f"{_path}/576/subgrid_Gamma_r.pkl")
+available_predictors = [
+    baseline_576 := _load(f"{_path}/576/baseline.pkl"),
+    compact_576 := _load(f"{_path}/576/compact.pkl"),
+    minimal_576 := _load(f"{_path}/576/minimal.pkl"),
+    subgrid_576 := _load(f"{_path}/576/subgrid.pkl"),
+    nonradiative_Gamma_r_576 := _load(f"{_path}/576/nonradiative_Gamma_r.pkl"),
+    subgrid_Gamma_r_576 := _load(f"{_path}/576/subgrid_Gamma_r.pkl"),
+]
