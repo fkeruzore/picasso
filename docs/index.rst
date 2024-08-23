@@ -91,6 +91,25 @@ Installation
 The latter option will not install or upgrade any package relying on ``JAX``, which can be useful to avoid messing up an existing install.
 To install ``JAX`` on your system, see `JAX's installation page <https://github.com/google/jax#installation>`__.
 
+
+Testing and benchmarking
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+To test your installation of ``picasso``, you can install the ``tests`` dependency group and run ``pytest``:
+
+.. code-block:: bash
+
+   git clone git@github.com:fkeruzore/picasso.git
+   cd picasso
+   poetry install --with=tests
+   poetry run pytest
+
+Some of the test also include basic benchmarking of model predictions using `pytest-benchmark <https://pytest-benchmark.readthedocs.io/en/latest/>`_:
+
+.. code-block:: bash
+
+   poetry run pytest --benchmark-enable
+
 ----
 
 Learn more
