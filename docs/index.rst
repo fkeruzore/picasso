@@ -124,19 +124,17 @@ Learn more
 Citation
 ^^^^^^^^
 
-If you use ``picasso`` for your research, please cite the ``picasso`` `original paper <https://arxiv.org/abs/2306.13807>`_:
+If you use ``picasso`` for your research, please cite the ``picasso`` `original paper <https://arxiv.org/>`_:
 
 .. code-block:: bibtex
 
    @article{keruzore_picasso_2024,
-      title={Optimization and Quality Assessment of Baryon Pasting for Intracluster Gas using the Borg Cube Simulation}, 
-      author={F. Kéruzoré and L. E. Bleem and M. Buehlmann and J. D. Emberson and N. Frontiere and S. Habib and K. Heitmann and P. Larsen},
-      year={2023},
-      eprint={2306.13807},
-      archivePrefix={arXiv},
-      primaryClass={astro-ph.CO},
-      doi={https://doi.org/10.21105/astro.2306.13807},
-      url={https://arxiv.org/abs/2306.13807}, 
+   title={The picasso gas model: Painting intracluster gas on gravity-only simulations}, 
+   author={F. Kéruzoré and others},
+   year={2024},
+   eprint={},
+   doi={},
+   url={}, 
    }
 
 ----
