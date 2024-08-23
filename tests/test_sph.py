@@ -105,4 +105,3 @@ def test_sph_convolve():
     )
     assert arr1_conv.shape == parts_i["arr1"].shape
     assert arr2_conv.shape == parts_i["arr2"].shape
-    return arr1_conv, arr2_conv
