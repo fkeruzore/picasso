@@ -1,15 +1,18 @@
 import jax
 import jax.numpy as jnp
 from picasso import predictors, utils
-import pickle
 from functools import partial
 import os
 import pytest
+import h5py
 
 here = os.path.dirname(os.path.abspath(__file__))
 path = f"{here}/data"
-with open(f"{path}/test_data_predictor.pkl", "rb") as f:
-    data_predictor = pickle.load(f)
+with h5py.File(f"{path}/halos.hdf5", "r") as f:
+    halos = {
+        k.replace("_ov_", "/"): jnp.array(v) for k, v in f["halos"].items()
+    }
+    profs = {k: jnp.array(v) for k, v in f["profs"].items()}
 
 
 def test_flax_reg_mlp():
@@ -50,10 +53,10 @@ def test_predictor_conversion_and_io(transform):
     if transform:
         minmax_x = jnp.array([jnp.zeros(X_DIM), jnp.ones(X_DIM)])
         minmax_y = jnp.array([jnp.zeros(Y_DIM), jnp.ones(Y_DIM)])
-        transfom_x = partial(
+        transform_x = partial(
             utils.transform_minmax, mins=minmax_x[0], maxs=minmax_x[1]
         )
-        transfom_y = partial(
+        transform_y = partial(
             utils.inv_transform_minmax, mins=minmax_y[0], maxs=minmax_y[1]
         )
     else:  # This violates Flake8(E731), but this is what I want to do
@@ -61,7 +64,7 @@ def test_predictor_conversion_and_io(transform):
         transform_y = lambda y: y  # noqa: E731, F841
 
     pred = predictors.PicassoPredictor(
-        mlp, transfom_x=transfom_x, transfom_y=transfom_y
+        mlp, transform_x=transform_x, transform_y=transform_y
     )
     pred_t = predictors.PicassoTrainedPredictor.from_predictor(pred, net_par)
     pred_t.save("./toto.pkl")
@@ -111,48 +114,58 @@ def test_predictor_conversion_and_io(transform):
 
 
 @pytest.mark.parametrize("jit", ["jit", "nojit"])
-def test_predict_model_params_pretrained(jit, benchmark):
-    predictor = predictors.PicassoTrainedPredictor.load(
-        f"{path}/untrained_predictor.pkl"
-    )
+def test_benchmark_predict_model_parameters(jit, benchmark):
+    predictor = predictors.nonradiative_Gamma_r_576
+    x = jnp.array([halos[k] for k in predictor.input_names]).T
+
     predict_func = predictor.predict_model_parameters
     if jit == "jit":  # jit the function and call it once to compile
         predict_func = jax.jit(predict_func)
-        _ = predict_func(data_predictor["x"][0])
+        _ = predict_func(x)
 
     # benchmark function (jitted or not)
-    y_pred = benchmark(predict_func, data_predictor["x"])
-    assert y_pred.shape == (data_predictor["x"].shape[0], 8)
-    assert jnp.all(jnp.isfinite(y_pred))
+    _ = benchmark(predict_func, x)
 
 
 @pytest.mark.parametrize("jit", ["jit", "nojit"])
-def test_predict_gas_properties_pretrained(jit, benchmark):
-    predictor = predictors.PicassoTrainedPredictor.load(
-        f"{path}/untrained_predictor.pkl"
-    )
+def test_benchmark_predict_gas_model(jit, benchmark):
+    predictor = predictors.nonradiative_Gamma_r_576
+    x = jnp.array([halos[k] for k in predictor.input_names]).T
+
     predict_func = predictor.predict_gas_model
     if jit == "jit":  # jit the function and call it once to compile
         predict_func = jax.jit(predict_func)
         _ = predict_func(
-            data_predictor["x"][0],
-            data_predictor["phi"][0],
-            data_predictor["r_R500"][0],
-            data_predictor["r_R500"][0] / 2,
+            x,
+            profs["phi"],
+            profs["r_R500"],
+            profs["r_R500"] / 2,
         )
 
     # benchmark function (jitted or not)
-    profs_pred = benchmark(
+    _ = benchmark(
         predict_func,
-        data_predictor["x"],
-        data_predictor["phi"],
-        data_predictor["r_R500"],
-        data_predictor["r_R500"] / 2,
+        x,
+        profs["phi"],
+        profs["r_R500"],
+        profs["r_R500"] / 2,
     )
-    profs_pred = jnp.array(profs_pred)
-    assert profs_pred.shape == (
-        4,
-        data_predictor["x"].shape[0],
-        data_predictor["phi"].shape[1],
+
+
+@pytest.mark.parametrize("predictor", predictors.available_predictors)
+def test_pretrained_predictors(predictor):
+    x = jnp.array([halos[k] for k in predictor.input_names]).T
+    n_halos = len(halos["log M200"])
+    y_pred = predictor.predict_model_parameters(x)
+    assert y_pred.shape == (n_halos, 8)
+    assert jnp.all(jnp.isfinite(y_pred))
+
+    n_r_bins = profs["r_R500"].shape[1]
+    profs_pred = predictor.predict_gas_model(
+        x,
+        profs["phi"],
+        profs["r_R500"],
+        profs["r_R500"] / 2,
     )
-    assert jnp.all(jnp.isfinite(profs_pred))
+    assert jnp.array(profs_pred).shape == (4, n_halos, n_r_bins)
+    assert jnp.all(jnp.isfinite(jnp.array(profs_pred)))
