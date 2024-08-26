@@ -13,11 +13,11 @@ h5py = "^3.9.0"
 astropy = "^5.3.3"
 dill = "^0.3.8"
 
-[tool.poetry.group.jax]
+jax = {version = "^0.4.20", optional = true}
+flax = {version = "^0.8.1", optional = true}
 
-[tool.poetry.group.jax.dependencies]
-flax = "^0.8.1"
-jax = "^0.4.20"
+[tool.poetry.extras]
+jax = ["jax", "flax"]
 
 [tool.poetry.group.tests]
 optional = true

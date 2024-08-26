@@ -4,7 +4,7 @@
 name = "absl-py"
 version = "2.1.0"
 description = "Abseil Python Common Libraries, see https://github.com/abseil/abseil-py."
-optional = false
+optional = true
 python-versions = ">=3.7"
 files = [
     {file = "absl-py-2.1.0.tar.gz", hash = "sha256:7820790efbb316739cde8b4e19357243fc3608a152024288513dd968d7d959ff"},
@@ -286,7 +286,7 @@ files = [
 name = "chex"
 version = "0.1.86"
 description = "Chex: Testing made fun, in JAX!"
-optional = false
+optional = true
 python-versions = ">=3.9"
 files = [
     {file = "chex-0.1.86-py3-none-any.whl", hash = "sha256:251c20821092323a3d9c28e1cf80e4a58180978bec368f531949bd9847eee568"},
@@ -357,7 +357,7 @@ files = [
 name = "etils"
 version = "1.5.2"
 description = "Collection of common python utils"
-optional = false
+optional = true
 python-versions = ">=3.9"
 files = [
     {file = "etils-1.5.2-py3-none-any.whl", hash = "sha256:6dc882d355e1e98a5d1a148d6323679dc47c9a5792939b9de72615aa4737eb0b"},
@@ -424,7 +424,7 @@ pyflakes = ">=3.1.0,<3.2.0"
 name = "flax"
 version = "0.8.5"
 description = "Flax: A neural network library for JAX designed for flexibility"
-optional = false
+optional = true
 python-versions = ">=3.9"
 files = [
     {file = "flax-0.8.5-py3-none-any.whl", hash = "sha256:c96e46d1c48a300d010ebf5c4846f163bdd7acc6efff5ff2bfb1cb5b08aa65d8"},
@@ -454,7 +454,7 @@ testing = ["black[jupyter] (==23.7.0)", "clu", "clu (<=0.0.9)", "einops", "gymna
 name = "fsspec"
 version = "2024.6.1"
 description = "File-system specification"
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "fsspec-2024.6.1-py3-none-any.whl", hash = "sha256:3cb443f8bcd2efb31295a5b9fdb02aee81d8452c80d28f97a6d0959e6cee101e"},
@@ -526,7 +526,7 @@ numpy = ">=1.17.3"
 name = "humanize"
 version = "4.10.0"
 description = "Python humanize utilities"
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "humanize-4.10.0-py3-none-any.whl", hash = "sha256:39e7ccb96923e732b5c2e27aeaa3b10a8dfeeba3eb965ba7b74a3eb0e30040a6"},
@@ -581,7 +581,7 @@ test = ["flufl.flake8", "importlib-resources (>=1.3)", "jaraco.test (>=5.4)", "p
 name = "importlib-resources"
 version = "6.4.4"
 description = "Read resources from Python packages"
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "importlib_resources-6.4.4-py3-none-any.whl", hash = "sha256:dda242603d1c9cd836c3368b1174ed74cb4049ecd209e7a1a0104620c18c5c11"},
@@ -614,7 +614,7 @@ files = [
 name = "jax"
 version = "0.4.30"
 description = "Differentiate, compile, and transform Numpy code."
-optional = false
+optional = true
 python-versions = ">=3.9"
 files = [
     {file = "jax-0.4.30-py3-none-any.whl", hash = "sha256:289b30ae03b52f7f4baf6ef082a9f4e3e29c1080e22d13512c5ecf02d5f1a55b"},
@@ -649,7 +649,7 @@ tpu = ["jaxlib (==0.4.30)", "libtpu-nightly (==0.1.dev20240617)", "requests"]
 name = "jaxlib"
 version = "0.4.30"
 description = "XLA library for JAX"
-optional = false
+optional = true
 python-versions = ">=3.9"
 files = [
     {file = "jaxlib-0.4.30-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:c40856e28f300938c6824ab1a615166193d6997dec946578823f6d402ad454e5"},
@@ -703,7 +703,7 @@ i18n = ["Babel (>=2.7)"]
 name = "markdown-it-py"
 version = "3.0.0"
 description = "Python port of markdown-it. Markdown parsing, done right!"
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "markdown-it-py-3.0.0.tar.gz", hash = "sha256:e3f60a94fa066dc52ec76661e37c851cb232d92f9886b15cb560aaada2df8feb"},
@@ -807,7 +807,7 @@ files = [
 name = "mdurl"
 version = "0.1.2"
 description = "Markdown URL utilities"
-optional = false
+optional = true
 python-versions = ">=3.7"
 files = [
     {file = "mdurl-0.1.2-py3-none-any.whl", hash = "sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8"},
@@ -818,7 +818,7 @@ files = [
 name = "ml-dtypes"
 version = "0.4.0"
 description = ""
-optional = false
+optional = true
 python-versions = ">=3.9"
 files = [
     {file = "ml_dtypes-0.4.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:93afe37f3a879d652ec9ef1fc47612388890660a2657fbb5747256c3b818fd81"},
@@ -855,7 +855,7 @@ dev = ["absl-py", "pyink", "pylint (>=2.6.0)", "pytest", "pytest-xdist"]
 name = "msgpack"
 version = "1.0.8"
 description = "MessagePack serializer"
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "msgpack-1.0.8-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:505fe3d03856ac7d215dbe005414bc28505d26f0c128906037e66d98c4e95868"},
@@ -931,7 +931,7 @@ files = [
 name = "nest-asyncio"
 version = "1.6.0"
 description = "Patch asyncio to allow nested event loops"
-optional = false
+optional = true
 python-versions = ">=3.5"
 files = [
     {file = "nest_asyncio-1.6.0-py3-none-any.whl", hash = "sha256:87af6efd6b5e897c81050477ef65c62e2b2f35d51703cae01aff2905b1852e1c"},
@@ -987,7 +987,7 @@ files = [
 name = "opt-einsum"
 version = "3.3.0"
 description = "Optimizing numpys einsum function"
-optional = false
+optional = true
 python-versions = ">=3.5"
 files = [
     {file = "opt_einsum-3.3.0-py3-none-any.whl", hash = "sha256:2455e59e3947d3c275477df7f5205b30635e266fe6dc300e3d9f9646bfcea147"},
@@ -1005,7 +1005,7 @@ tests = ["pytest", "pytest-cov", "pytest-pep8"]
 name = "optax"
 version = "0.2.3"
 description = "A gradient processing and optimisation library in JAX."
-optional = false
+optional = true
 python-versions = ">=3.9"
 files = [
     {file = "optax-0.2.3-py3-none-any.whl", hash = "sha256:083e603dcd731d7e74d99f71c12f77937dd53f79001b4c09c290e4f47dd2e94f"},
@@ -1030,7 +1030,7 @@ test = ["dm-tree (>=0.1.7)", "flax (>=0.5.3)", "scikit-learn", "scipy (>=1.7.1)"
 name = "orbax-checkpoint"
 version = "0.6.1"
 description = "Orbax Checkpoint"
-optional = false
+optional = true
 python-versions = ">=3.9"
 files = [
     {file = "orbax_checkpoint-0.6.1-py3-none-any.whl", hash = "sha256:f7fcb1ef528cee294ea244e769eaee17de2379c68a00d6df4c3a463e5cf716a1"},
@@ -1111,7 +1111,7 @@ testing = ["pytest", "pytest-benchmark"]
 name = "protobuf"
 version = "5.27.3"
 description = ""
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "protobuf-5.27.3-cp310-abi3-win32.whl", hash = "sha256:dcb307cd4ef8fec0cf52cb9105a03d06fbb5275ce6d84a6ae33bc6cf84e0a07b"},
@@ -1358,7 +1358,7 @@ use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 name = "rich"
 version = "13.7.1"
 description = "Render rich text, tables, progress bars, syntax highlighting, markdown and more to the terminal"
-optional = false
+optional = true
 python-versions = ">=3.7.0"
 files = [
     {file = "rich-13.7.1-py3-none-any.whl", hash = "sha256:4edbae314f59eb482f54e9e30bf00d33350aaa94f4bfcd4e9e3110e64d0d7222"},
@@ -1418,7 +1418,7 @@ test = ["asv", "gmpy2", "hypothesis", "mpmath", "pooch", "pytest", "pytest-cov",
 name = "setuptools"
 version = "73.0.1"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "setuptools-73.0.1-py3-none-any.whl", hash = "sha256:b208925fcb9f7af924ed2dc04708ea89791e24bde0d3020b27df0e116088b34e"},
@@ -1701,7 +1701,7 @@ test = ["pytest"]
 name = "tensorstore"
 version = "0.1.64"
 description = "Read and write large, multi-dimensional arrays"
-optional = false
+optional = true
 python-versions = ">=3.9"
 files = [
     {file = "tensorstore-0.1.64-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:c369088c74c0dda30398290724513a0289f25ccc01865ed5aec62e57f1930709"},
@@ -1746,7 +1746,7 @@ files = [
 name = "toolz"
 version = "0.12.1"
 description = "List processing tools and functional utilities"
-optional = false
+optional = true
 python-versions = ">=3.7"
 files = [
     {file = "toolz-0.12.1-py3-none-any.whl", hash = "sha256:d22731364c07d72eea0a0ad45bafb2c2937ab6fd38a3507bf55eae8744aa7d85"},
@@ -1796,7 +1796,10 @@ files = [
 doc = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "rst.linker (>=1.9)", "sphinx (>=3.5)", "sphinx-lint"]
 test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", "jaraco.test", "more-itertools", "pytest (>=6,!=8.1.*)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=2.2)", "pytest-ignore-flaky", "pytest-mypy", "pytest-ruff (>=0.2.1)"]
 
+[extras]
+jax = ["flax", "jax"]
+
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13"
-content-hash = "1aab20d74b9ccda4fed8c03a35b480660cd5da0fe40c1efececb4a70d998e44c"
+content-hash = "b73a5425e68a373c5bb111b35c8f747cf5656465ad51c1d24930e80445952f5e"
