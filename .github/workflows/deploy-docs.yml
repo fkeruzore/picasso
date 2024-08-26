@@ -29,23 +29,25 @@ jobs:
       run: poetry install --with docs --extras jax
 
     - name: Build Sphinx documentation
-      run: poetry run sphinx-build -b html docs docs/build/html  # adjust the path to your docs folder if needed
+      run: poetry run sphinx-build -b html docs docs/build/html
 
-    - name: Clone fkeruzore.github.io
+    - name: Clone fkeruzore.github.io using HTTPS
       run: |
-        git clone git@github.com:fkeruzore/fkeruzore.github.io.git
+        git clone https://github.com/fkeruzore/fkeruzore.github.io.git
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # This provides the token for auth
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Copy built docs to picasso directory
+    - name: Copy built docs
       run: |
-        rsync -av --delete docs/_build/html/ fkeruzore.github.io/picasso/
+        rsync -av --delete docs/build/html/ fkeruzore.github.io/picasso/
 
     - name: Commit and push changes to fkeruzore.github.io
       run: |
         cd fkeruzore.github.io
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
         git add picasso/
-        git commit -m "Update picasso documentation [skip ci]"
+        git commit -m "Update picasso documentation"
         git push origin main
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # This provides the token for auth
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
