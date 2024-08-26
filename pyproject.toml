@@ -51,6 +51,9 @@ sphinxcontrib-jsmath = "^1.0.1"
 sphinxcontrib-katex = "^0.9.10"
 sphinxcontrib-qthelp = "^1.0.8"
 sphinxcontrib-serializinghtml = "^1.1.10"
+matplotlib = "^3.9.2"
+myst-nb = "^1.1.1"
+seaborn = "^0.13.2"
 
 [build-system]
 requires = ["poetry-core"]
