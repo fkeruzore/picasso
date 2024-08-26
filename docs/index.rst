@@ -129,6 +129,7 @@ Learn more
 
    notebooks/make_predictions.ipynb
    notebooks/demo_model.ipynb
+   notebooks/train_model.ipynb
 
 .. toctree::
    :caption: Reference
