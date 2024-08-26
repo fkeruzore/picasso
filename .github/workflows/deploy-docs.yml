@@ -1,0 +1,50 @@
+name: Deploy Documentation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'  # or your required Python version
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "::add-path::$HOME/.local/bin"
+
+      - name: Install dependencies with Poetry
+        run: poetry install --no-dev
+
+      - name: Build Sphinx documentation
+        run: poetry run sphinx-build -b html docs docs/build/html  # adjust the path to your docs folder if needed
+
+      - name: Clone fkeruzore.github.io
+        run: |
+          git clone git@github.com:fkeruzore/fkeruzore.github.io.git
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # This provides the token for auth
+
+      - name: Copy built docs to picasso directory
+        run: |
+          rsync -av --delete docs/_build/html/ fkeruzore.github.io/picasso/
+
+      - name: Commit and push changes to fkeruzore.github.io
+        run: |
+          cd fkeruzore.github.io
+          git add picasso/
+          git commit -m "Update picasso documentation [skip ci]"
+          git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # This provides the token for auth
