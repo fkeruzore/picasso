@@ -17,6 +17,13 @@ picasso
 It combines an analytical model of gas properties as a function of gravitational potential with a neural network predicting the parameters of said model.
 It is released here as a Python package, combining an implementation of the gas model based on `JAX <https://jax.readthedocs.io/en/latest/>`_ and `flax <https://flax.readthedocs.io/en/latest/index.html>`_, and models that have been pre-trained to reproduce gas properties from hydrodynamic simulations.
 
+.. div:: sd-text-center sd-font-bold
+
+   ⚠️🚧🚧🚧⚠️
+   WARNING: picasso is under development, its first release will be announced soon.
+   ⚠️🚧🚧🚧⚠️
+
+
 
 Why use picasso?
 ^^^^^^^^^^^^^^^^
