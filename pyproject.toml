@@ -3,6 +3,10 @@ name = "picasso"
 version = "0.5.0"
 description = ""
 authors = ["Florian Keruzore <florian.keruzore@gmail.com>"]
+license = "MIT"
+homepage = "https://github.com/fkeruzore/picasso"
+repository = "https://github.com/fkeruzore/picasso"
+documentation = "https://picasso-cosmo.readthedocs.io/en/latest/"
 readme = "README.md"
 
 [tool.poetry.dependencies]
