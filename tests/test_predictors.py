@@ -1,18 +1,11 @@
 import jax
 import jax.numpy as jnp
-from picasso import predictors, utils
 from functools import partial
 import os
 import pytest
-import h5py
 
-here = os.path.dirname(os.path.abspath(__file__))
-path = f"{here}/data"
-with h5py.File(f"{path}/halos.hdf5", "r") as f:
-    halos = {
-        k.replace("_ov_", "/"): jnp.array(v) for k, v in f["halos"].items()
-    }
-    profs = {k: jnp.array(v) for k, v in f["profs"].items()}
+from picasso import predictors, utils
+from picasso.test_data import halos, profs
 
 
 def test_flax_reg_mlp():
