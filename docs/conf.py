@@ -40,6 +40,7 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 html_theme = "sphinx_book_theme"
 html_static_path = ["_static"]
 html_logo = "../images/logo_circle.png"
+html_favicon = "../images/logo_circle.png"
 html_theme_options = {
     "show_toc_level": 2,
     "repository_url": "https://github.com/fkeruzore/picasso",
