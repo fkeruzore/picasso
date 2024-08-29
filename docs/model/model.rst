@@ -51,7 +51,7 @@ See also:
 Neural network predictions
 --------------------------
 
-To pick values for the gas model components, ``picasso`` uses a fully-connected neural network that is trained to predicts the :math:`\vartheta_{\rm gas}` vector given a set of halo properties :math:`\vartheta_{\rm halo}`.
+To pick values for the gas model components, ``picasso`` uses a fully-connected neural network that is trained to predict the :math:`\vartheta_{\rm gas}` vector given a set of halo properties :math:`\vartheta_{\rm halo}`.
 The key assumptions are that, for a given halo, the complexity of the gas distribution can be captured by the parameters of :math:`\vartheta_{\rm gas}`, and that halo properties contain enough information to robustly predict the values of these parameters.
 The neural network is trained to reproduce a given target data, in general the properties of halos found in hydrodynamic simulations.
 The components of :math:`\vartheta_{\rm halo}` can vary, depending on the properties available during the training and on how widely usable a trained model aims to be.
