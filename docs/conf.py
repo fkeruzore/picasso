@@ -19,7 +19,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
-    "sphinxcontrib.katex",
+    # "sphinxcontrib.katex",
     "sphinx.ext.viewcode",
     "matplotlib.sphinxext.plot_directive",
     "sphinx_autodoc_typehints",
