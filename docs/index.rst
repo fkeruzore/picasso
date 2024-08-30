@@ -13,7 +13,7 @@ picasso
 
 ----
 
-``picasso`` is a model that allows making predictions for the thermodynamic properties of the gas in massive dark matter halos from gravity-only cosmological simulations.
+``picasso`` is a model that makes predictions for the thermodynamic properties of the gas in massive dark matter halos from gravity-only cosmological simulations.
 It combines an analytical model of gas properties as a function of gravitational potential with a neural network predicting the parameters of said model.
 It is released here as a Python package, combining an implementation of the gas model based on `JAX <https://jax.readthedocs.io/en/latest/>`_ and `flax <https://flax.readthedocs.io/en/latest/index.html>`_, and models that have been pre-trained to reproduce gas properties from hydrodynamic simulations.
 
@@ -54,7 +54,7 @@ Why use picasso?
 
          .. div:: sd-font-normal
 
-            Thanks to the use of ``JAX`` and ``flax`` in its numerical implementation, ``picasso`` can make predictions that can be compiled just-in-time, accelerated on GPU/TPU, and automatically differentiable.
+            Thanks to the use of ``JAX`` and ``flax`` in its numerical implementation, ``picasso`` can make predictions that can be compiled just-in-time, accelerated on GPU/TPU, and are automatically differentiable.
 
    .. grid-item::
       :columns: 12 12 12 6

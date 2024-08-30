@@ -2,6 +2,8 @@
 <img src="https://raw.githubusercontent.com/fkeruzore/fkeruzore.github.io/master/images/picasso_header.png" alt="logo"></img>
 </div>
 
+[![Documentation Status](https://readthedocs.org/projects/picasso-cosmo/badge/?version=latest)](https://picasso-cosmo.readthedocs.io/en/latest/?badge=latest)
+
 # picasso
 
 *Painting intracluster gas on gravity-only simulations*
@@ -14,7 +16,7 @@ It is released here as a Python package, combining an implementation of the gas 
 WARNING: picasso is under development, its first release will be announced soon.
 ⚠️🚧🚧🚧⚠️
 
-## [Documentation](https://github.com/fkeruzore/picasso)
+## [Documentation](https://picasso-cosmo.readthedocs.io/en/latest/)
 
 *See also [Kéruzoré et al. (2024)](https://arxiv.org/abs/2306.13807).*
 

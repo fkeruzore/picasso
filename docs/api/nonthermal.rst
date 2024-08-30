@@ -1,6 +1,8 @@
 ``picasso.nonthermal``: Non-thermal pressure support
 ====================================================
 
+For a mathematical description of the model, see :doc:`../model/model`.
+
 .. currentmodule:: picasso.nonthermal
 
 .. autosummary::
