@@ -36,7 +36,7 @@ optional = true
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.2"
 flake8 = "^6.1.0"
-black = "^23.10.1"
+black = "^24.3.0"
 
 [tool.poetry.group.docs]
 optional = true
