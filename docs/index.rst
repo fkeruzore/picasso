@@ -144,7 +144,7 @@ Learn more
 Citation
 ^^^^^^^^
 
-If you use ``picasso`` for your research, please cite the ``picasso`` `original paper <https://arxiv.org/>`_:
+If you use ``picasso`` for your research, please cite the ``picasso`` `original paper <https://arxiv.org/abs/2408.17445>`_:
 
 .. code-block:: bibtex
 
