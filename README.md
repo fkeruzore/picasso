@@ -53,7 +53,7 @@ poetry run pytest --benchmark-enable
 
 ## Citation
 
-If you use `picasso` for your research, please cite the `picasso` [original paper](https://arxiv.org/):
+If you use `picasso` for your research, please cite the `picasso` [original paper](https://arxiv.org/abs/2408.17445):
 
 ```bib
 @article{keruzore_picasso_2024,
