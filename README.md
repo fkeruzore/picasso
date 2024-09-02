@@ -12,24 +12,22 @@
 It combines an analytical model of gas properties as a function of gravitational potential with a neural network predicting the parameters of said model.
 It is released here as a Python package, combining an implementation of the gas model based on [JAX](https://jax.readthedocs.io/en/latest/) and [Flax](https://flax.readthedocs.io/en/latest/index.html), and models that have been pre-trained to reproduce gas properties from hydrodynamic simulations.
 
-⚠️🚧🚧🚧⚠️
-WARNING: picasso is under development, its first release will be announced soon.
-⚠️🚧🚧🚧⚠️
-
 ## [Documentation](https://picasso-cosmo.readthedocs.io/en/latest/)
 
 *See also [Kéruzoré et al. (2024)](https://arxiv.org/abs/2306.13807).*
 
 ## Installation
 
-`picasso` uses [Poetry](https://python-poetry.org) to install dependencies:
+`picasso` can be install via `pip`:
 
 ```sh
-git clone git@github.com:fkeruzore/picasso.git
-cd picasso
-poetry install
-# or, if you already have JAX and flax installed,
-poetry install --without=jax
+pip install -e "git+https://github.com/fkeruzore/picasso.git#egg=picasso[jax]"?
+```
+
+Alternatively, if you already have JAX and flax installed, you may use
+
+```sh
+pip install -e "git+https://github.com/fkeruzore/picasso.git#egg=picasso"?
 ```
 
 The latter option will not install or upgrade any package relying on JAX, which can be useful to avoid messing up an existing install.
@@ -37,6 +35,7 @@ To install JAX on your system, see [JAX's installation page](https://github.com/
 
 ## Testing and benchmarking
 
+`picasso` uses [Poetry](https://python-poetry.org) to manage dependencies.
 To test your installation of `picasso`, you can install the `tests` dependency group and run `pytest`:
 
 ```sh
@@ -59,10 +58,11 @@ If you use `picasso` for your research, please cite the `picasso` [original pape
 ```bib
 @article{keruzore_picasso_2024,
   title={The picasso gas model: Painting intracluster gas on gravity-only simulations}, 
-  author={F. Kéruzoré and others},
+  author={F. Kéruzoré and L. E. Bleem and N. Frontiere and N. Krishnan and M. Buehlmann and J. D. Emberson and S. Habib and P. Larsen},
   year={2024},
-  eprint={},
-  doi={},
-  url={}, 
+  eprint={2408.17445},
+  archivePrefix={arXiv},
+  primaryClass={astro-ph.CO},
+  url={https://arxiv.org/abs/2408.17445}, 
 }
 ```

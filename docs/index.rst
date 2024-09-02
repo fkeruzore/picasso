@@ -17,14 +17,6 @@ picasso
 It combines an analytical model of gas properties as a function of gravitational potential with a neural network predicting the parameters of said model.
 It is released here as a Python package, combining an implementation of the gas model based on `JAX <https://jax.readthedocs.io/en/latest/>`_ and `flax <https://flax.readthedocs.io/en/latest/index.html>`_, and models that have been pre-trained to reproduce gas properties from hydrodynamic simulations.
 
-.. div:: sd-text-center sd-font-bold
-
-   ⚠️🚧🚧🚧⚠️
-   WARNING: picasso is under development, its first release will be announced soon.
-   ⚠️🚧🚧🚧⚠️
-
-
-
 Why use picasso?
 ^^^^^^^^^^^^^^^^
 
@@ -85,23 +77,24 @@ Why use picasso?
 Installation
 ^^^^^^^^^^^^
 
-``picasso`` uses ``poetry``:
+``picasso`` can be install via ``pip``:
 
 .. code-block:: bash
+   pip install -e "git+https://github.com/fkeruzore/picasso.git#egg=picasso[jax]"?
 
-   git clone git@github.com:fkeruzore/picasso.git
-   cd picasso
-   poetry install
-   # or, if you already have JAX and flax installed,
-   poetry install --without=jax
+Alternatively, if you already have JAX and flax installed, you may use
 
-The latter option will not install or upgrade any package relying on ``JAX``, which can be useful to avoid messing up an existing install.
-To install ``JAX`` on your system, see `JAX's installation page <https://github.com/google/jax#installation>`__.
+.. code-block:: bash
+   pip install -e "git+https://github.com/fkeruzore/picasso.git#egg=picasso"?
+
+The latter option will not install or upgrade any package relying on JAX, which can be useful to avoid messing up an existing install.
+To install JAX on your system, see `JAX's installation page <https://github.com/google/jax#installation>`_.
 
 
 Testing and benchmarking
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
+``picasso`` uses `Poetry <https://python-poetry.org>`_` to manage dependencies.
 To test your installation of ``picasso``, you can install the ``tests`` dependency group and run ``pytest``:
 
 .. code-block:: bash
@@ -156,12 +149,13 @@ If you use ``picasso`` for your research, please cite the ``picasso`` `original 
 .. code-block:: bibtex
 
    @article{keruzore_picasso_2024,
-   title={The picasso gas model: Painting intracluster gas on gravity-only simulations}, 
-   author={F. Kéruzoré and others},
-   year={2024},
-   eprint={},
-   doi={},
-   url={}, 
+      title={The picasso gas model: Painting intracluster gas on gravity-only simulations}, 
+      author={F. Kéruzoré and L. E. Bleem and N. Frontiere and N. Krishnan and M. Buehlmann and J. D. Emberson and S. Habib and P. Larsen},
+      year={2024},
+      eprint={2408.17445},
+      archivePrefix={arXiv},
+      primaryClass={astro-ph.CO},
+      url={https://arxiv.org/abs/2408.17445}, 
    }
 
 ----
