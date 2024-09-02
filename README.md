@@ -18,14 +18,16 @@ It is released here as a Python package, combining an implementation of the gas 
 
 ## Installation
 
-`picasso` uses [Poetry](https://python-poetry.org) to install dependencies:
+`picasso` can be install via `pip`:
 
 ```sh
-git clone git@github.com:fkeruzore/picasso.git
-cd picasso
-poetry install
-# or, if you already have JAX and flax installed,
-poetry install --without=jax
+pip install -e "git+https://github.com/fkeruzore/picasso.git#egg=picasso[jax]"?
+```
+
+Alternatively, if you already have JAX and flax installed, you may use
+
+```sh
+pip install -e "git+https://github.com/fkeruzore/picasso.git#egg=picasso"?
 ```
 
 The latter option will not install or upgrade any package relying on JAX, which can be useful to avoid messing up an existing install.
@@ -33,6 +35,7 @@ To install JAX on your system, see [JAX's installation page](https://github.com/
 
 ## Testing and benchmarking
 
+`picasso` uses [Poetry](https://python-poetry.org) to manage dependencies.
 To test your installation of `picasso`, you can install the `tests` dependency group and run `pytest`:
 
 ```sh
