@@ -14,7 +14,7 @@ It is released here as a Python package, combining an implementation of the gas 
 
 ## [Documentation](https://picasso-cosmo.readthedocs.io/en/latest/)
 
-*See also [Kéruzoré et al. (2024)](https://arxiv.org/abs/2306.13807).*
+*See also [Kéruzoré et al. (2024)](https://arxiv.org/abs/2408.17445).*
 
 ## Installation
 
