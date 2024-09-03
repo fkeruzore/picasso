@@ -2,7 +2,9 @@
 <img src="https://raw.githubusercontent.com/fkeruzore/fkeruzore.github.io/master/images/picasso_header.png" alt="logo"></img>
 </div>
 
+![Tests](https://github.com/fkeruzore/picasso/actions/workflows/python-tests.yml/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/picasso-cosmo/badge/?version=latest)](https://picasso-cosmo.readthedocs.io/en/latest/?badge=latest)
+[![arXiv](https://img.shields.io/badge/arXiv-2408.17445-b31b1b.svg)](https://arxiv.org/abs/2408.17445)
 
 # picasso
 
