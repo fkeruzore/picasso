@@ -81,13 +81,13 @@ Installation
 
 .. code-block:: bash
 
-   pip install -e "git+https://github.com/fkeruzore/picasso.git#egg=picasso[jax]"?
+   pip install -e "git+https://github.com/fkeruzore/picasso.git#egg=picasso[jax]"
 
 Alternatively, if you already have JAX and flax installed, you may use
 
 .. code-block:: bash
 
-   pip install -e "git+https://github.com/fkeruzore/picasso.git#egg=picasso"?
+   pip install -e "git+https://github.com/fkeruzore/picasso.git#egg=picasso"
 
 The latter option will not install or upgrade any package relying on JAX, which can be useful to avoid messing up an existing install.
 To install JAX on your system, see `JAX's installation page <https://github.com/google/jax#installation>`_.
