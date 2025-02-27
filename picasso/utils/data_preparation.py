@@ -3,11 +3,13 @@ import jax.numpy as jnp
 import jax.scipy.stats as jss
 
 
-def transform_minmax(x: Array, mins: Array, maxs: Array):
+def transform_minmax(x: Array, minmaxs: Array):
+    mins, maxs = minmaxs
     return (x - mins) / (maxs - mins)
 
 
-def inv_transform_minmax(x: Array, mins: Array, maxs: Array):
+def inv_transform_minmax(x: Array, minmaxs: Array):
+    mins, maxs = minmaxs
     return x * (maxs - mins) + mins
 
 

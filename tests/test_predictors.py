@@ -44,24 +44,27 @@ def test_predictor_conversion_and_io(transform):
     net_par = mlp.init(jax.random.PRNGKey(66), jnp.empty(X_DIM))
 
     if transform:
-        minmax_x = jnp.array([jnp.zeros(X_DIM), jnp.ones(X_DIM)])
-        minmax_y = jnp.array([jnp.zeros(Y_DIM), jnp.ones(Y_DIM)])
-        transform_x = partial(
-            utils.transform_minmax, mins=minmax_x[0], maxs=minmax_x[1]
-        )
-        transform_y = partial(
-            utils.inv_transform_minmax, mins=minmax_y[0], maxs=minmax_y[1]
-        )
-    else:  # This violates Flake8(E731), but this is what I want to do
-        transform_x = lambda x: x  # noqa: E731, F841
-        transform_y = lambda y: y  # noqa: E731, F841
+        transform_x = "minmax"
+        transform_y = "inv_minmax"
+        args_transform_x = jnp.array([jnp.zeros(X_DIM), jnp.ones(X_DIM)])
+        args_transform_y = jnp.array([jnp.zeros(Y_DIM), jnp.ones(Y_DIM)])
+    else:
+        transform_x = None
+        transform_y = None
+        args_transform_x = None
+        args_transform_y = None
 
     pred = predictors.PicassoPredictor(
-        mlp, transform_x=transform_x, transform_y=transform_y
+        mlp,
+        transform_x=transform_x,
+        transform_y=transform_y,
+        args_transform_x=args_transform_x,
+        args_transform_y=args_transform_y,
     )
     pred_t = predictors.PicassoTrainedPredictor.from_predictor(pred, net_par)
-    pred_t.save("./toto.pkl")
-    pred_t_rest = predictors.PicassoTrainedPredictor.load("./toto.pkl")
+    filename = "./toto.hdf5"
+    pred_t.save(filename)
+    pred_t_rest = predictors.load(filename)
 
     # Single halo
     x = jnp.ones(X_DIM)
@@ -103,7 +106,7 @@ def test_predictor_conversion_and_io(transform):
         + "`PicassoTrainedPredictor`"
     )
 
-    os.remove("./toto.pkl")
+    os.remove(filename)
 
 
 @pytest.mark.parametrize("jit", ["jit", "nojit"])
