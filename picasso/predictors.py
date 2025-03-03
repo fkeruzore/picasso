@@ -2,21 +2,27 @@ import jax
 import jax.numpy as jnp
 import flax.linen as nn
 import os
-import dill
 
 from jax import Array
-from typing import Sequence, Callable, Iterable
+from typing import Sequence, Callable, Iterable, Optional
 
 from . import polytrop, nonthermal
+from .utils import jax_utils, data_preparation
 
 
-possible_activations = {
+_avail_activ = {
     "selu": nn.selu,
     "relu": nn.relu,
     "tanh": nn.tanh,
     "sigmoid": nn.sigmoid,
     "clip": jnp.clip,
     "linear": lambda x: x,
+}
+
+_avail_trans = {
+    "minmax": data_preparation.transform_minmax,
+    "inv_minmax": data_preparation.inv_transform_minmax,
+    "none": lambda x, *args: x,
 }
 
 
@@ -40,9 +46,6 @@ class FlaxRegMLP(nn.Module):
         including input and output. Accepted names are ["selu", "relu",
         "tanh", "sigmoid", "clip", "linear]. Defaults to ["selu",
         "selu", "selu", "linear"].
-    extra_args_output_activation : Iterable
-        Extra arguments to be passed to the output activation function,
-        defaults to ().
 
     See also
     --------
@@ -53,19 +56,16 @@ class FlaxRegMLP(nn.Module):
     Y_DIM: int
     hidden_features: Sequence[int] = (16, 16)
     activations: Sequence[str] = ("selu", "selu", "selu", "linear")
-    extra_args_output_activation: Iterable[Array] = ()
 
     @nn.compact
     def __call__(self, x):
         x = nn.Dense(self.X_DIM, name="input")(x)
-        x = possible_activations[self.activations[0]](x)
+        x = _avail_activ[self.activations[0]](x)
         for i, _features in enumerate(self.hidden_features):
             x = nn.Dense(_features, name=f"dense{i + 1}")(x)
-            x = possible_activations[self.activations[i + 1]](x)
+            x = _avail_activ[self.activations[i + 1]](x)
         x = nn.Dense(self.Y_DIM, name="output")(x)
-        x = possible_activations[self.activations[-1]](
-            x, *self.extra_args_output_activation
-        )
+        x = _avail_activ[self.activations[-1]](x)
         return x
 
 
@@ -125,8 +125,10 @@ class PicassoPredictor:
     def __init__(
         self,
         mlp: FlaxRegMLP,
-        transform_x: Callable = lambda x: x,
-        transform_y: Callable = lambda y: y,
+        transform_x: Optional[str] = None,
+        transform_y: Optional[str] = None,
+        args_transform_x: Optional[Array] = None,
+        args_transform_y: Optional[Array] = None,
         fix_params: dict = {},
         f_nt_model: str = "broken_plaw",
         input_names: Iterable[str] = [
@@ -146,39 +148,51 @@ class PicassoPredictor:
         name="model",
     ):
         self.mlp = mlp
+
+        if transform_x is None:
+            transform_x = "none"
         self._transform_x = transform_x
+        self.args_transform_x = args_transform_x
+
+        if transform_y is None:
+            transform_y = "none"
         self._transform_y = transform_y
+        self.args_transform_y = args_transform_y
+
         self.name = name
         self.input_names = input_names
         self.param_indices = {
-            "rho_0": 0,
-            "P_0": 1,
-            "Gamma_0": 2,
-            "c_Gamma": 3,
-            "theta_0": 4,
-            "A_nt": 5,
-            "B_nt": 6,
-            "C_nt": 7,
+            "log10 rho_0": "0",
+            "log10 P_0": "1",
+            "Gamma_0": "2",
+            "c_Gamma": "3",
+            "theta_0": "4",
+            "log10 A_nt": "5",
+            "log10 B_nt": "6",
+            "C_nt": "7",
         }
-        self.fix_params = {}
+        self.fix_params = fix_params
+        self._fix_params = {}
         for k, v in fix_params.items():
-            self.fix_params[self.param_indices[k]] = jnp.array(v)
+            self._fix_params[self.param_indices[k]] = jnp.array(v)
+
+        self.f_nt_model = f_nt_model
         self._gas_par2gas_props = _gas_par2gas_props[f_nt_model]
         self._gas_par2gas_props_v = _gas_par2gas_props_v[f_nt_model]
 
     def transform_x(self, x: Array) -> Array:
-        return self._transform_x(x)
+        return _avail_trans[self._transform_x](x, self.args_transform_x)
 
     def transform_y(self, y: Array) -> Array:
         # First make the output the right shape to be able to apply the
         # y scaling regardless of fixed parameters
-        for k in self.fix_params.keys():
-            y = jnp.insert(y, k, 0.0, axis=-1)
+        for k in self._fix_params.keys():
+            y = jnp.insert(y, int(k), 0.0, axis=-1)
         # Apply the y scaling
-        y_out = self._transform_y(y)
+        y_out = _avail_trans[self._transform_y](y, self.args_transform_y)
         # Fix parameters that need to be fixed
-        for k, v in self.fix_params.items():
-            y_out = y_out.at[..., k].set(v)
+        for k, v in self._fix_params.items():
+            y_out = y_out.at[..., int(k)].set(v)
         return y_out
 
     def predict_model_parameters(self, x: Array, net_par: dict) -> Array:
@@ -239,6 +253,13 @@ class PicassoPredictor:
                 The predicted non-thermal pressure fraction.
         """
         gas_par = self.predict_model_parameters(x, net_par)
+        # Careful with the log scales!
+        gas_par = gas_par.at[..., 0].set(10 ** gas_par[..., 0])
+        gas_par = gas_par.at[..., 1].set(10 ** gas_par[..., 1])
+        gas_par = gas_par.at[..., 4].set(1e-6 * gas_par[..., 4])
+        gas_par = gas_par.at[..., 5].set(10 ** gas_par[..., 5])
+        gas_par = gas_par.at[..., 6].set(10 ** gas_par[..., 6])
+
         if len(gas_par.shape) == 1:
             rho_g, P_tot, P_th, f_nth = self._gas_par2gas_props(
                 gas_par, phi, r_pol, r_fnt
@@ -251,34 +272,32 @@ class PicassoPredictor:
 
     def save(self, filename):
         """
-        Serializes the object using `dill` and saves it to disk.
+        Serializes the object to a Pytree and saves it to disk in
+        HDF5 format.
 
         Parameters
         ----------
         filename : str
             File to save the model to.
         """
-        with open(filename, "wb") as f:
-            f.write(dill.dumps(self))
 
-    @classmethod
-    def load(cls, filename):
-        """
-        Reads a model object from disk using `dill`.
-
-        Parameters
-        ----------
-        filename : str
-            File to read the saved model from.
-
-        Returns
-        -------
-        PicassoPredictor
-            The saved model.
-        """
-        with open(filename, "rb") as f:
-            inst = dill.load(f)
-        return inst
+        tree = {
+            "X_DIM": self.mlp.X_DIM,
+            "Y_DIM": self.mlp.Y_DIM,
+            "hidden_features": self.mlp.hidden_features,
+            "activations": self.mlp.activations,
+            "transform_x": self._transform_x,
+            "transform_y": self._transform_y,
+            "args_transform_x": self.args_transform_x,
+            "args_transform_y": self.args_transform_y,
+            "fix_params": self.fix_params,
+            "f_nt_model": self.f_nt_model,
+            "input_names": self.input_names,
+            "name": self.name,
+        }
+        if hasattr(self, "net_par"):
+            tree["net_par"] = self.net_par
+        jax_utils.save_pytree_h5(tree, filename)
 
 
 class PicassoTrainedPredictor(PicassoPredictor):
@@ -387,6 +406,45 @@ class PicassoTrainedPredictor(PicassoPredictor):
         return super().predict_model_parameters(x, self.net_par)
 
 
+def load(filename):
+    """
+    Reads a model object from disk.
+
+    Parameters
+    ----------
+    filename : str
+        File to read the saved model from.
+
+    Returns
+    -------
+    PicassoPredictor
+        The saved model.
+    """
+    tree = jax_utils.load_pytree_h5(filename)
+    mlp = FlaxRegMLP(
+        tree["X_DIM"],
+        tree["Y_DIM"],
+        tree["hidden_features"],
+        tree["activations"],
+    )
+    kwargs = {
+        "transform_x": tree["transform_x"],
+        "transform_y": tree["transform_y"],
+        "args_transform_x": tree["args_transform_x"],
+        "args_transform_y": tree["args_transform_y"],
+        "fix_params": tree["fix_params"],
+        "f_nt_model": tree["f_nt_model"],
+        "input_names": tree["input_names"],
+        "name": tree["name"],
+    }
+    predictor = PicassoPredictor(mlp, **kwargs)
+    if "net_par" in tree.keys():
+        return PicassoTrainedPredictor.from_predictor(
+            predictor, tree["net_par"]
+        )
+    return predictor
+
+
 def draw_mlp(mlp: FlaxRegMLP, colors=["k", "w"], alpha_line=1.0):
     import matplotlib.pyplot as plt
 
@@ -440,13 +498,12 @@ def draw_mlp(mlp: FlaxRegMLP, colors=["k", "w"], alpha_line=1.0):
 
 
 _path = f"{os.path.dirname(os.path.abspath(__file__))}/trained_models"
-_load = PicassoTrainedPredictor.load
 
 available_predictors = [
-    baseline_576 := _load(f"{_path}/576/baseline.pkl"),
-    compact_576 := _load(f"{_path}/576/compact.pkl"),
-    minimal_576 := _load(f"{_path}/576/minimal.pkl"),
-    subgrid_576 := _load(f"{_path}/576/subgrid.pkl"),
-    nonradiative_Gamma_r_576 := _load(f"{_path}/576/nonradiative_Gamma_r.pkl"),
-    subgrid_Gamma_r_576 := _load(f"{_path}/576/subgrid_Gamma_r.pkl"),
+    baseline_576 := load(f"{_path}/576/baseline.hdf5"),
+    compact_576 := load(f"{_path}/576/compact.hdf5"),
+    minimal_576 := load(f"{_path}/576/minimal.hdf5"),
+    subgrid_576 := load(f"{_path}/576/subgrid.hdf5"),
+    nonradiative_Gamma_r_576 := load(f"{_path}/576/nonradiative_Gamma_r.hdf5"),
+    subgrid_Gamma_r_576 := load(f"{_path}/576/subgrid_Gamma_r.hdf5"),
 ]
