@@ -1,10 +1,9 @@
 import jax
 import jax.numpy as jnp
-from functools import partial
 import os
 import pytest
 
-from picasso import predictors, utils
+from picasso import predictors
 from picasso.test_data import halos, profs
 
 
