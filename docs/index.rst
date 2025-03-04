@@ -81,13 +81,13 @@ Installation
 
 .. code-block:: bash
 
-   pip install -e "git+https://github.com/fkeruzore/picasso.git#egg=picasso[jax]"
+   pip install picasso-cosmo[jax]
 
 Alternatively, if you already have JAX and flax installed, you may use
 
 .. code-block:: bash
 
-   pip install -e "git+https://github.com/fkeruzore/picasso.git#egg=picasso"
+   pip install picasso-cosmo
 
 The latter option will not install or upgrade any package relying on JAX, which can be useful to avoid messing up an existing install.
 To install JAX on your system, see `JAX's installation page <https://github.com/google/jax#installation>`_.
@@ -151,13 +151,13 @@ If you use ``picasso`` for your research, please cite the ``picasso`` `original 
 .. code-block:: bibtex
 
    @article{keruzore_picasso_2024,
-      title={The picasso gas model: Painting intracluster gas on gravity-only simulations}, 
-      author={F. Kéruzoré and L. E. Bleem and N. Frontiere and N. Krishnan and M. Buehlmann and J. D. Emberson and S. Habib and P. Larsen},
-      year={2024},
-      eprint={2408.17445},
-      archivePrefix={arXiv},
-      primaryClass={astro-ph.CO},
-      url={https://arxiv.org/abs/2408.17445}, 
+     title={The picasso gas model: Painting intracluster gas on gravity-only simulations}, 
+     author={F. Kéruzoré and L. E. Bleem and N. Frontiere and N. Krishnan and M. Buehlmann and J. D. Emberson and S. Habib and P. Larsen},
+     year={2024},
+     eprint={2408.17445},
+     archivePrefix={arXiv},
+     primaryClass={astro-ph.CO},
+     url={https://arxiv.org/abs/2408.17445}, 
    }
 
 ----
