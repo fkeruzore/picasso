@@ -5,6 +5,7 @@
 ![Tests](https://github.com/fkeruzore/picasso/actions/workflows/python-tests.yml/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/picasso-cosmo/badge/?version=latest)](https://picasso-cosmo.readthedocs.io/en/latest/?badge=latest)
 [![arXiv](https://img.shields.io/badge/arXiv-2408.17445-b31b1b.svg)](https://arxiv.org/abs/2408.17445)
+![PyPI - Version](https://img.shields.io/pypi/v/picasso-cosmo)
 
 # picasso
 
@@ -23,13 +24,13 @@ It is released here as a Python package, combining an implementation of the gas 
 `picasso` can be install via `pip`:
 
 ```sh
-pip install -e "git+https://github.com/fkeruzore/picasso.git#egg=picasso[jax]"
+pip install picasso-cosmo[jax]
 ```
 
 Alternatively, if you already have JAX and flax installed, you may use
 
 ```sh
-pip install -e "git+https://github.com/fkeruzore/picasso.git#egg=picasso"
+pip install picasso-cosmo
 ```
 
 The latter option will not install or upgrade any package relying on JAX, which can be useful to avoid messing up an existing install.
