@@ -1,6 +1,6 @@
 [tool.poetry]
-name = "picasso"
-version = "1.0.0"
+name = "picasso-cosmo"
+version = "1.1.0"
 description = ""
 authors = ["Florian Keruzore <florian.keruzore@gmail.com>"]
 license = "MIT"
@@ -8,11 +8,13 @@ homepage = "https://github.com/fkeruzore/picasso"
 repository = "https://github.com/fkeruzore/picasso"
 documentation = "https://picasso-cosmo.readthedocs.io/en/latest/"
 readme = "README.md"
+packages = [
+    { include = "picasso" }
+]
 
 [tool.poetry.dependencies]
 python = ">=3.9"
 numpy = ">=1.25.2"
-scipy = ">= 1.6.0"
 h5py = ">=3.9.0"
 
 jax = {version = "^0.4.20", optional = true}
