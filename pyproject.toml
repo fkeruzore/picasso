@@ -8,6 +8,9 @@ homepage = "https://github.com/fkeruzore/picasso"
 repository = "https://github.com/fkeruzore/picasso"
 documentation = "https://picasso-cosmo.readthedocs.io/en/latest/"
 readme = "README.md"
+packages = [
+    { include = "picasso" }
+]
 
 [tool.poetry.dependencies]
 python = ">=3.9"
