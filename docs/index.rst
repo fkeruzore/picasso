@@ -146,19 +146,27 @@ Learn more
 Citation
 ^^^^^^^^
 
-If you use ``picasso`` for your research, please cite the ``picasso`` `original paper <https://arxiv.org/abs/2408.17445>`_:
+If you use ``picasso`` for your research, please cite the ``picasso`` `original paper <https://astro.theoj.org/article/127486-the-picasso-gas-model-painting-intracluster-gas-on-gravity-only-simulations>`_:
 
 .. code-block:: bibtex
 
-   @article{keruzore_picasso_2024,
-     title={The picasso gas model: Painting intracluster gas on gravity-only simulations}, 
-     author={F. Kéruzoré and L. E. Bleem and N. Frontiere and N. Krishnan and M. Buehlmann and J. D. Emberson and S. Habib and P. Larsen},
-     year={2024},
-     eprint={2408.17445},
-     archivePrefix={arXiv},
-     primaryClass={astro-ph.CO},
-     url={https://arxiv.org/abs/2408.17445}, 
-   }
+   @ARTICLE{2024OJAp....7E.116K,
+          author = {{K{\'e}ruzor{\'e}}, Florian and {Bleem}, L.~E. and {Frontiere}, N. and {Krishnan}, N. and {Buehlmann}, M. and {Emberson}, J.~D. and {Habib}, S. and {Larsen}, P.},
+           title = "{The picasso gas model: Painting intracluster gas on gravity-only simulations}",
+         journal = {The Open Journal of Astrophysics},
+        keywords = {Astrophysics - Cosmology and Nongalactic Astrophysics},
+            year = 2024,
+           month = dec,
+          volume = {7},
+             eid = {116},
+           pages = {116},
+             doi = {10.33232/001c.127486},
+   archivePrefix = {arXiv},
+          eprint = {2408.17445},
+    primaryClass = {astro-ph.CO},
+}
+
+
 
 ----
 
