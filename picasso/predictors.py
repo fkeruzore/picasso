@@ -504,6 +504,7 @@ available_predictors = [
     compact_576 := load(f"{_path}/576/compact.hdf5"),
     minimal_576 := load(f"{_path}/576/minimal.hdf5"),
     subgrid_576 := load(f"{_path}/576/subgrid.hdf5"),
+    compact_subgrid_576 := load(f"{_path}/576/compact_subgrid.hdf5"),
     nonradiative_Gamma_r_576 := load(f"{_path}/576/nonradiative_Gamma_r.hdf5"),
     subgrid_Gamma_r_576 := load(f"{_path}/576/subgrid_Gamma_r.hdf5"),
 ]

@@ -33,6 +33,9 @@ The six models described in [Kéruzoré et al. (2024)](https://arxiv.org/abs/240
    * - subgrid
      - ``predictors.subgrid_576``
      - Uses full input vector, trained to reproduce full-physics hydrodynamics profiles, with fixed :math:`c_\gamma = 0`
+   * - compact_subgrid
+     - ``predictors.compact_subgrid_576``
+     - Uses compact input vector, trained to reproduce full-physics hydrodynamics profiles, with fixed :math:`c_\gamma = 0`
    * - NR + :math:`\Gamma(r)`
      - ``predictors.nonradiative_Gamma_r_576``
      - Uses full input vector, trained to reproduce non-radiative hydrodynamics profiles, with variable :math:`c_\gamma`
