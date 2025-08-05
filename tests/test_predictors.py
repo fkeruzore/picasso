@@ -71,9 +71,9 @@ def test_predictor_conversion_and_io(transform):
     y2 = pred_t.predict_model_parameters(x)
     y3 = pred_t_rest.predict_model_parameters(x)
 
-    assert y.shape == (
-        Y_DIM,
-    ), f"Wrong shape for prediction: {y.shape} (should be {(Y_DIM,)})"
+    assert y.shape == (Y_DIM,), (
+        f"Wrong shape for prediction: {y.shape} (should be {(Y_DIM,)})"
+    )
 
     assert jnp.allclose(y, y2), (
         "Failed to recover same results when converting"
@@ -147,8 +147,11 @@ def test_benchmark_predict_gas_model(jit, benchmark):
     )
 
 
-@pytest.mark.parametrize("predictor", predictors.available_predictors)
-def test_pretrained_predictors(predictor):
+@pytest.mark.parametrize(
+    "predictor_name", predictors.available_predictors.keys()
+)
+def test_pretrained_predictors(predictor_name):
+    predictor = predictors.available_predictors[predictor_name]
     x = jnp.array([halos[k] for k in predictor.input_names]).T
     n_halos = len(halos["log M200"])
     y_pred = predictor.predict_model_parameters(x)
