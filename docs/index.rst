@@ -96,21 +96,22 @@ To install JAX on your system, see `JAX's installation page <https://github.com/
 Testing and benchmarking
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-``picasso`` uses `Poetry <https://python-poetry.org>`_ to manage dependencies.
+``picasso`` uses `uv <https://docs.astral.sh/uv/>`_ to manage dependencies.
 To test your installation of ``picasso``, you can install the ``tests`` dependency group and run ``pytest``:
 
 .. code-block:: bash
 
    git clone git@github.com:fkeruzore/picasso.git
    cd picasso
-   poetry install --with=tests
-   poetry run pytest
+   uv python install
+   uv sync --all-groups --all-extras
+   uv run pytest
 
 Some of the test also include basic benchmarking of model predictions using `pytest-benchmark <https://pytest-benchmark.readthedocs.io/en/latest/>`_:
 
 .. code-block:: bash
 
-   poetry run pytest --benchmark-enable
+   uv run pytest --benchmark-enable
 
 ----
 

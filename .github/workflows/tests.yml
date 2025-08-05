@@ -1,0 +1,29 @@
+name: Tests
+
+on:
+  push:
+    branches: "*"
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+
+    - name: Install Python
+      run: uv python install
+    
+    - name: Install the project
+      run: uv sync --locked --dev --extra jax
+
+    - name: Run tests
+      run: uv run pytest -v --cov=halox

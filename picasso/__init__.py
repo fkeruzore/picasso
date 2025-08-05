@@ -1,6 +1,6 @@
 __author__ = "Florian Kéruzoré"
 __email__ = "florian.keruzore@gmail.com"
-__version__ = "1.1.3"
+__version__ = "1.1.4"
 
 __all__ = [
     "nonthermal",

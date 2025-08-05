@@ -4,7 +4,7 @@ import flax.linen as nn
 import os
 
 from jax import Array
-from typing import Sequence, Callable, Iterable, Optional
+from typing import Sequence, Iterable, Optional
 
 from . import polytrop, nonthermal
 from .utils import jax_utils, data_preparation
@@ -470,7 +470,7 @@ def draw_mlp(mlp: FlaxRegMLP, colors=["k", "w"], alpha_line=1.0):
             ax.add_artist(circle)
     # Edges
     for n, (layer_size_a, layer_size_b) in enumerate(
-        zip(layer_sizes[:-1], layer_sizes[1:])
+        zip(layer_sizes[:-1], layer_sizes[1:], strict=False)
     ):
         layer_top_a = (
             v_spacing * (layer_size_a - 1) / 2.0 + (top + bottom) / 2.0
@@ -499,12 +499,20 @@ def draw_mlp(mlp: FlaxRegMLP, colors=["k", "w"], alpha_line=1.0):
 
 _path = f"{os.path.dirname(os.path.abspath(__file__))}/trained_models"
 
-available_predictors = [
-    baseline_576 := load(f"{_path}/576/baseline.hdf5"),
-    compact_576 := load(f"{_path}/576/compact.hdf5"),
-    minimal_576 := load(f"{_path}/576/minimal.hdf5"),
-    subgrid_576 := load(f"{_path}/576/subgrid.hdf5"),
-    compact_subgrid_576 := load(f"{_path}/576/compact_subgrid.hdf5"),
-    nonradiative_Gamma_r_576 := load(f"{_path}/576/nonradiative_Gamma_r.hdf5"),
-    subgrid_Gamma_r_576 := load(f"{_path}/576/subgrid_Gamma_r.hdf5"),
-]
+available_predictors = {
+    "baseline_576": load(f"{_path}/576/baseline.hdf5"),
+    "compact_576": load(f"{_path}/576/compact.hdf5"),
+    "minimal_576": load(f"{_path}/576/minimal.hdf5"),
+    "subgrid_576": load(f"{_path}/576/subgrid.hdf5"),
+    "compact_subgrid_576": load(f"{_path}/576/compact_subgrid.hdf5"),
+    "nonradiative_Gamma_r_576": load(f"{_path}/576/nonradiative_Gamma_r.hdf5"),
+    "subgrid_Gamma_r_576": load(f"{_path}/576/subgrid_Gamma_r.hdf5"),
+}
+
+baseline_576 = available_predictors["baseline_576"]
+compact_576 = available_predictors["compact_576"]
+minimal_576 = available_predictors["minimal_576"]
+subgrid_576 = available_predictors["subgrid_576"]
+compact_subgrid_576 = available_predictors["compact_subgrid_576"]
+nonradiative_Gamma_r_576 = available_predictors["nonradiative_Gamma_r_576"]
+subgrid_Gamma_r_576 = available_predictors["subgrid_Gamma_r_576"]

@@ -2,12 +2,12 @@ Available pre-trained predictors
 ================================
 
 The ``picasso`` package comes with several pre-trained models, allowing direct inference of gas thermodynamics from halo properties and potential.
-They are all accessible in the ``picasso.predictors`` module.
+They are all accessible in the ``picasso.predictors`` module; a list can be found in ``picasso.predictors.available_predictors``.
 
 576 runs
 --------
 
-The six models described in [Kéruzoré et al. (2024)](https://arxiv.org/abs/2408.17445).
+The six models described in `Kéruzoré et al. (2024) <https://arxiv.org/abs/2408.17445>`_.
 
 * Underlying cosmology: Planck 2020 (:math:`\Omega_{\rm cdm} = 0.26067`, :math:`\omega_{\rm b} = 0.02242`, :math:`h = 0.6766`, :math:`\sigma_8 = 0.8102`, :math:`n_s = 0.9665`, :math:`w = −1`), :math:`\Omega_k = 0`, :math:`\Sigma m_\nu = 0`
 * :math:`L_{\rm box} = 576 h^{−1} \; {\rm Mpc}`, :math:`L_{\rm box} = 576 \; h^{−1}{\rm Mpc}`, :math:`2304^3` particles (Gravity-only particle mass: :math:`m_m = 1.34 \times 10^9 \; h^{-1}M_\odot`).
