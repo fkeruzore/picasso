@@ -1835,7 +1835,7 @@ wheels = [
 ]
 
 [[package]]
-name = "picasso"
+name = "picasso-cosmo"
 version = "1.1.4"
 source = { editable = "." }
 dependencies = [
@@ -1873,6 +1873,12 @@ docs = [
     { name = "sphinx-design" },
     { name = "sphinx-remove-toctrees" },
 ]
+tests = [
+    { name = "pytest" },
+    { name = "pytest-benchmark" },
+    { name = "pytest-cov" },
+    { name = "pytest-xdist" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -1901,6 +1907,12 @@ docs = [
     { name = "sphinx-copybutton", specifier = ">=0.5.2" },
     { name = "sphinx-design", specifier = ">=0.6.1" },
     { name = "sphinx-remove-toctrees", specifier = ">=1.0.0.post1" },
+]
+tests = [
+    { name = "pytest", specifier = ">=8.4.1" },
+    { name = "pytest-benchmark", specifier = ">=4.0.0" },
+    { name = "pytest-cov", specifier = ">=6.2.1" },
+    { name = "pytest-xdist", specifier = ">=3.7.0" },
 ]
 
 [[package]]

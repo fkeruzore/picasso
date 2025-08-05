@@ -1,5 +1,5 @@
 [project]
-name = "picasso"
+name = "picasso-cosmo"
 version = "1.1.4"
 description = "Painting intracluster gas on gravity-only simulations"
 readme = "README.md"
@@ -27,14 +27,19 @@ jax = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build.targets.wheel]
+packages = ["picasso"]
+
 [dependency-groups]
 dev = [
-    "pytest>=8.4.1",
     "ruff>=0.12.7",
+    {include-group = "tests"}
+]
+tests = [
+    "pytest>=8.4.1",
     "pytest-cov>=6.2.1",
     "pytest-xdist>=3.7.0",
     "pytest-benchmark>=4.0.0",
-
 ]
 docs = [
     "matplotlib>=3.9.4",
